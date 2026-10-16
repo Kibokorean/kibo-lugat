@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function activeTeacher() {
+      return signedIn() && exists(/databases/$(database)/documents/teacherProfiles/$(request.auth.uid))
+        && get(/databases/$(database)/documents/teacherProfiles/$(request.auth.uid)).data.active == true;
+    }
+    match /teacherProfiles/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      // Provision teacher profiles manually through Firebase Console or a trusted Admin SDK backend.
+      allow write: if false;
+    }
+    match /kiboClasses/{classId} {
+      allow create: if activeTeacher() && request.resource.data.teacherUid == request.auth.uid;
+      allow read, update, delete: if activeTeacher() && resource.data.teacherUid == request.auth.uid;
+    }
+    match /kiboAssignments/{assignmentId} {
+      allow create: if activeTeacher() && request.resource.data.teacherUid == request.auth.uid
+        && exists(/databases/$(database)/documents/kiboClasses/$(request.resource.data.classId))
+        && get(/databases/$(database)/documents/kiboClasses/$(request.resource.data.classId)).data.teacherUid == request.auth.uid;
+      allow read, update, delete: if activeTeacher() && resource.data.teacherUid == request.auth.uid;
+    }
+    // Existing vocabulary progress sync remains user-scoped. Adjust only if the current app uses another path.
+    match /users/{userId} {
+      allow read, write: if signedIn() && request.auth.uid == userId;
+    }
+  }
+}

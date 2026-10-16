@@ -1,0 +1,11 @@
+{
+  "name": "KIBO KOREAN",
+  "short_name": "KIBO",
+  "description": "Koreyscha lug‘at va o‘rganish platformasi",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f8fa",
+  "theme_color": "#0f766e",
+  "icons": []
+}
