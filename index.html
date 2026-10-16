@@ -4979,25 +4979,96 @@ body.night .kibo-profile-editor,body.night .kibo-leader-row{background:var(--pan
 <script id="kibo-profile-leaderboard-logic">
 (()=>{
  'use strict';
- const $=id=>document.getElementById(id), REVIEW_KEY='kibo_spaced_review_v1', SECTION_KEY='kibo_30word_sections_v3', SECTION_SIZE=30;
+ const $=id=>document.getElementById(id), REVIEW_KEY='kibo_spaced_review_v1';
  let db=null,auth=null,currentUser=null,period='week',profileImageData=null,leaderCache=[];
  const setProfileStatus=(msg,error=false)=>{const el=$('kiboProfileStatus');if(el){el.textContent=msg;el.style.color=error?'#dc3545':'var(--muted)'}};
- function readObject(value){return value&&typeof value==='object'&&!Array.isArray(value)?value:{}}
- function localProgress(){try{return readObject(JSON.parse(localStorage.getItem(REVIEW_KEY)||'{}'))}catch(e){return {}}}
- function sectionCount(value){try{const a=Array.isArray(value)?value:JSON.parse(localStorage.getItem(SECTION_KEY)||'[]');return new Set(a.map(Number).filter(Number.isFinite)).size*SECTION_SIZE}catch(e){return 0}}
- function counts(progress,sectionsValue){const items=Object.values(readObject(progress)).filter(x=>x&&typeof x==='object'&&x.ko&&x.uz);const now=Date.now(),week=now-7*86400000;const reviewed=items.filter(x=>(Number(x.step)||0)>0);const localHome=Number($('homeMasteredCount')?.textContent?.replace(/[^0-9]/g,''))||0;return {all:Math.max(reviewed.length,sectionCount(sectionsValue),sectionCount(),localHome),week:reviewed.filter(x=>Number(x.last)>=week&&Number(x.last)<=now+86400000).length}}
+ const safeText=v=>String(v||'').replace(/[&<>"\']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"\'":'&#39;'}[c]));
+ function localProgress(){try{const x=JSON.parse(localStorage.getItem(REVIEW_KEY)||'{}');return x&&typeof x==='object'&&!Array.isArray(x)?x:{}}catch(e){return {}}}
+ function counts(progress){const items=Object.values(progress||{}).filter(x=>x&&typeof x==='object'&&x.ko&&x.uz);const now=Date.now(),week=now-7*86400000;return {all:items.filter(x=>(Number(x.step)||0)>0).length,week:items.filter(x=>(Number(x.step)||0)>0&&Number(x.last)>=week&&Number(x.last)<=now+86400000).length}}
  function preview(name,image){const img=$('kiboProfilePreview'),initial=$('kiboProfileInitial');if(img){img.src=image||'';img.hidden=!image}if(initial){initial.hidden=!!image;initial.textContent=(name||currentUser?.displayName||currentUser?.email||'K').trim().charAt(0).toUpperCase()||'K'}}
  async function loadProfile(){if(!currentUser||!db){setProfileStatus('Profilni o‘zgartirish uchun hisobingizga kiring.');return}try{const snap=await db.collection('users').doc(currentUser.uid).get(),d=snap.exists?snap.data():{};$('kiboProfileName').value=d.profileName||currentUser.displayName||'';profileImageData=d.profileImage||null;preview($('kiboProfileName').value,profileImageData);setProfileStatus('Profil ma’lumotlari yuklandi.')}catch(e){setProfileStatus('Profilni yuklab bo‘lmadi. Firestore ruxsatlarini tekshiring.',true)}}
  async function resizeImage(file){if(!file.type.startsWith('image/'))throw new Error('Rasm faylini tanlang.');const url=URL.createObjectURL(file);try{const img=new Image();img.src=url;await img.decode();const max=320,scale=Math.min(1,max/Math.max(img.width,img.height)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);return canvas.toDataURL('image/jpeg',.78)}finally{URL.revokeObjectURL(url)}}
  async function saveProfile(){if(!currentUser||!db){setProfileStatus('Avval hisobingizga kiring.',true);return}const name=$('kiboProfileName').value.trim();if(!name){setProfileStatus('Profil nomini kiriting.',true);return}const btn=$('kiboSaveProfile');btn.disabled=true;try{await db.collection('users').doc(currentUser.uid).set({profileName:name,profileImage:profileImageData||null,profileUpdatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});await publishScore();preview(name,profileImageData);setProfileStatus('Profil muvaffaqiyatli saqlandi.')}catch(e){console.error(e);setProfileStatus('Saqlash amalga oshmadi: ' +(e.code||e.message||'xatolik'),true)}finally{btn.disabled=false}}
- async function publishScore(){if(!currentUser||!db)return;const snap=await db.collection('users').doc(currentUser.uid).get(),d=snap.exists?snap.data():{},progress=readObject(d.progress),local=localProgress();const cloudReview=readObject(progress[REVIEW_KEY]);const combined={...cloudReview,...local};const sections=Array.isArray(progress[SECTION_KEY])?progress[SECTION_KEY]:null;const c=counts(combined,sections);await db.collection('leaderboard').doc(currentUser.uid).set({uid:currentUser.uid,displayName:d.profileName||currentUser.displayName||currentUser.email?.split('@')[0]||'KIBO o‘quvchisi',photoURL:d.profileImage||null,allCount:c.all,weekCount:c.week,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true})}
+ async function publishScore(){if(!currentUser||!db)return;const snap=await db.collection('users').doc(currentUser.uid).get(),d=snap.exists?snap.data():{},progress=d.progress&&typeof d.progress==='object'?d.progress:{},local=localProgress();const review=progress[REVIEW_KEY]&&typeof progress[REVIEW_KEY]==='object'?progress[REVIEW_KEY]:{};const combined={...review,...local};const c=counts(combined);await db.collection('leaderboard').doc(currentUser.uid).set({uid:currentUser.uid,displayName:d.profileName||currentUser.displayName||currentUser.email?.split('@')[0]||'KIBO o‘quvchisi',photoURL:d.profileImage||null,allCount:c.all,weekCount:c.week,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true})}
  function renderLeaderboard(){const list=$('kiboLeaderboard'),my=$('kiboMyRank');if(!list||!my)return;const key=period==='week'?'weekCount':'allCount';const sorted=leaderCache.slice().sort((a,b)=>(Number(b[key])||0)-(Number(a[key])||0)||String(a.displayName||'').localeCompare(String(b.displayName||'')));list.innerHTML='';if(!sorted.length){list.innerHTML='<div class="kibo-leaderboard-empty">Hozircha reyting uchun ma’lumot yo‘q. So‘z yodlab, hisobingizni sinxronlang.</div>';my.textContent='Reytingda hali ma’lumot yo‘q.';return}const mine=sorted.findIndex(x=>currentUser&&x.uid===currentUser.uid);my.textContent=currentUser?(mine>=0?`Sizning o‘rningiz: ${mine+1}-o‘rin · ${(Number(sorted[mine][key])||0).toLocaleString('uz-UZ')} ta so‘z`:'Sizning hisobingiz reytingga hali qo‘shilmagan. Sozlamalardan profilni saqlang yoki progressni sinxronlang.'):'Shaxsiy o‘rningizni ko‘rish uchun hisobingizga kiring.';sorted.slice(0,50).forEach((u,i)=>{const row=document.createElement('div');row.className='kibo-leader-row'+(currentUser&&u.uid===currentUser.uid?' is-me':'');const place=document.createElement('div');place.className='kibo-leader-place';place.textContent=i===0?'🥇':i===1?'🥈':i===2?'🥉':String(i+1);const avatar=document.createElement(u.photoURL?'img':'div');avatar.className='kibo-leader-avatar';if(u.photoURL){avatar.src=u.photoURL;avatar.alt=''}else avatar.textContent=(u.displayName||'K').trim().charAt(0).toUpperCase();const name=document.createElement('div');const n=document.createElement('div');n.className='kibo-leader-name';n.textContent=u.displayName||'KIBO o‘quvchisi';const sub=document.createElement('div');sub.className='kibo-leader-sub';sub.textContent=currentUser&&u.uid===currentUser.uid?'Bu siz':'KIBO o‘quvchisi';name.append(n,sub);const count=document.createElement('div');count.className='kibo-leader-count';count.textContent=(Number(u[key])||0).toLocaleString('uz-UZ')+' ta so‘z';row.append(place,avatar,name,count);list.appendChild(row)})}
  async function refreshLeaderboard(){const list=$('kiboLeaderboard');if(!db){if(list)list.innerHTML='<div class="kibo-leaderboard-empty">Reytingni yuklash uchun internet va Firebase kerak.</div>';return}if(list)list.innerHTML='<div class="kibo-leaderboard-empty">Reyting yangilanmoqda…</div>';try{if(currentUser)await publishScore();const snap=await db.collection('leaderboard').get();leaderCache=snap.docs.map(doc=>({uid:doc.id,...doc.data()}));renderLeaderboard()}catch(e){console.error('Leaderboard load failed',e);if(list)list.innerHTML='<div class="kibo-leaderboard-empty">Reyting yuklanmadi. Firestore Rules bo‘limidagi leaderboard ruxsatlarini tekshiring.</div>';if($('kiboMyRank'))$('kiboMyRank').textContent='Reyting ma’lumotlarini olishda xatolik.'}}
- $('kiboProfileName')?.addEventListener('input',()=>preview($('kiboProfileName').value,profileImageData));$('kiboProfileImage')?.addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{profileImageData=await resizeImage(file);preview($('kiboProfileName').value,profileImageData);setProfileStatus('Rasm tayyor. Saqlash tugmasini bosing.')}catch(err){setProfileStatus(err.message||'Rasmni o‘qib bo‘lmadi.',true)}});$('kiboSaveProfile')?.addEventListener('click',saveProfile);$('kiboRemoveProfileImage')?.addEventListener('click',()=>{profileImageData=null;$('kiboProfileImage').value='';preview($('kiboProfileName').value,null);setProfileStatus('Rasm olib tashlandi. O‘zgarishni saqlashni unutmang.')});document.querySelectorAll('[data-kibo-rank]').forEach(b=>b.addEventListener('click',()=>{period=b.dataset.kiboRank;document.querySelectorAll('[data-kibo-rank]').forEach(x=>x.classList.toggle('active',x===b));renderLeaderboard()}));$('kiboStatsRefresh')?.addEventListener('click',refreshLeaderboard);document.addEventListener('click',e=>{if(e.target.closest('[data-nav="stats"]'))setTimeout(refreshLeaderboard,200);if(e.target.closest('[data-nav="settings"]'))setTimeout(loadProfile,200)});window.addEventListener('storage',e=>{if(!e.key||e.key===REVIEW_KEY){if(currentUser)publishScore().then(refreshLeaderboard).catch(console.warn)}});document.addEventListener('kibo:review-updated',()=>{if(currentUser)publishScore().then(refreshLeaderboard).catch(console.warn)});document.addEventListener('kibo:progress-updated',()=>{if(currentUser)publishScore().then(refreshLeaderboard).catch(console.warn)});
+ $('kiboProfileName')?.addEventListener('input',()=>preview($('kiboProfileName').value,profileImageData));$('kiboProfileImage')?.addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{profileImageData=await resizeImage(file);preview($('kiboProfileName').value,profileImageData);setProfileStatus('Rasm tayyor. Saqlash tugmasini bosing.')}catch(err){setProfileStatus(err.message||'Rasmni o‘qib bo‘lmadi.',true)}});$('kiboSaveProfile')?.addEventListener('click',saveProfile);$('kiboRemoveProfileImage')?.addEventListener('click',()=>{profileImageData=null;$('kiboProfileImage').value='';preview($('kiboProfileName').value,null);setProfileStatus('Rasm olib tashlandi. O‘zgarishni saqlashni unutmang.')});document.querySelectorAll('[data-kibo-rank]').forEach(b=>b.addEventListener('click',()=>{period=b.dataset.kiboRank;document.querySelectorAll('[data-kibo-rank]').forEach(x=>x.classList.toggle('active',x===b));renderLeaderboard()}));$('kiboStatsRefresh')?.addEventListener('click',refreshLeaderboard);document.addEventListener('click',e=>{if(e.target.closest('[data-nav="stats"]'))setTimeout(refreshLeaderboard,200);if(e.target.closest('[data-nav="settings"]'))setTimeout(loadProfile,200)});window.addEventListener('storage',e=>{if(!e.key||e.key===REVIEW_KEY){if(currentUser)publishScore().then(refreshLeaderboard).catch(console.warn)}});document.addEventListener('kibo:review-updated',()=>{if(currentUser)publishScore().then(refreshLeaderboard).catch(console.warn)});
  function init(){if(!window.firebase||!firebase.apps?.length)return;auth=firebase.auth();db=firebase.firestore();auth.onAuthStateChanged(async u=>{currentUser=u||null;if(currentUser){await loadProfile();try{await publishScore()}catch(e){console.warn('KIBO leaderboard publish',e)}}else{preview('K',null);setProfileStatus('Profilni saqlash va reytingga qo‘shilish uchun hisobingizga kiring.')}refreshLeaderboard()})}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
+
+
+<style id="kibo-modern-dashboard-v1">
+/* Modern dashboard skin for the existing leaderboard/statistics views only. */
+#kiboStatsView{
+  --dash-blue:#287cff; --dash-blue-soft:rgba(40,124,255,.12);
+  box-sizing:border-box!important;width:min(100%,980px)!important;max-width:980px!important;
+  margin:clamp(12px,3vw,32px) auto!important;padding:clamp(20px,4vw,38px)!important;
+  border:1px solid var(--line,#dce5f1)!important;border-radius:26px!important;
+  background:var(--panel,#fff)!important;color:var(--text,#172033)!important;
+  box-shadow:0 18px 48px rgba(25,55,100,.07)!important;
+  text-align:left!important;isolation:isolate;
+}
+#kiboStatsView *{box-sizing:border-box}
+#kiboStatsView .kibo-stats-heading{position:relative;margin:0 0 22px;padding:0 0 20px;border-bottom:1px solid var(--line,#e3eaf4)}
+#kiboStatsView .picker-brand{display:inline-flex;align-items:center;gap:8px;margin:0 0 18px;padding:7px 11px;border:1px solid var(--line,#e3eaf4);border-radius:999px;background:var(--panel2,#f7f9fc);font-size:12px;font-weight:900;letter-spacing:.04em;color:var(--text,#172033)}
+#kiboStatsView .kibo-stats-heading h1{max-width:720px;margin:0 0 10px;font-size:clamp(27px,4.2vw,40px);line-height:1.13;letter-spacing:-.045em;font-weight:950;color:var(--text,#172033);text-wrap:balance}
+#kiboStatsView .kibo-stats-heading>p{margin:0;color:var(--muted,#718096);font-size:14px;line-height:1.6}
+#kiboStatsView .kibo-leaderboard-tabs{display:inline-flex;flex-wrap:wrap;gap:5px;margin:0 0 18px;padding:5px;border:1px solid var(--line,#dce5f1);border-radius:15px;background:var(--panel2,#f7f9fc)}
+#kiboStatsView .kibo-leaderboard-tabs button{min-height:42px;padding:10px 17px;border:1px solid transparent;border-radius:11px;background:transparent;color:var(--muted,#66758c);font-size:13px;font-weight:850;transition:background .18s ease,color .18s ease,box-shadow .18s ease}
+#kiboStatsView .kibo-leaderboard-tabs button:hover{background:var(--dash-blue-soft);color:var(--text,#172033)}
+#kiboStatsView .kibo-leaderboard-tabs button.active{background:var(--dash-blue);color:#fff;border-color:var(--dash-blue);box-shadow:0 4px 12px rgba(40,124,255,.22)}
+#kiboStatsView .kibo-my-rank{display:flex;align-items:center;min-height:64px;margin:0 0 14px;padding:18px 20px;border:1px solid rgba(40,124,255,.32);border-radius:17px;background:linear-gradient(110deg,var(--dash-blue-soft),transparent 78%),var(--panel2,#f7f9fc);font-size:15px;line-height:1.5;font-weight:900;color:var(--text,#172033)}
+#kiboStatsView .kibo-leaderboard{display:grid;gap:10px;margin-top:0}
+#kiboStatsView .kibo-leader-row{position:relative;grid-template-columns:42px 46px minmax(0,1fr) auto;gap:13px;min-height:76px;padding:14px 17px;border:1px solid var(--line,#e0e8f2);border-radius:17px;background:var(--panel2,#f8faff);transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
+#kiboStatsView .kibo-leader-row:hover{transform:translateY(-1px);border-color:rgba(40,124,255,.48);box-shadow:0 8px 22px rgba(30,60,100,.07)}
+#kiboStatsView .kibo-leader-row.is-me{border:1.5px solid var(--dash-blue);background:linear-gradient(100deg,var(--dash-blue-soft),transparent 68%),var(--panel2,#f8faff);box-shadow:0 0 0 2px rgba(40,124,255,.07)}
+#kiboStatsView .kibo-leader-place{display:grid;place-items:center;width:34px;height:34px;margin:auto;border-radius:11px;background:var(--soft,#edf3fb);font-size:14px;color:var(--text,#172033)}
+#kiboStatsView .kibo-leader-row:nth-child(1) .kibo-leader-place{background:#fff0c2;color:#956000}
+#kiboStatsView .kibo-leader-row:nth-child(2) .kibo-leader-place{background:#e8edf4;color:#4c5b70}
+#kiboStatsView .kibo-leader-row:nth-child(3) .kibo-leader-place{background:#f8e4d5;color:#92522c}
+#kiboStatsView .kibo-leader-avatar{width:44px;height:44px;border:1px solid var(--line,#dce5f1);box-shadow:0 2px 6px rgba(20,40,80,.08)}
+#kiboStatsView .kibo-leader-name{font-size:15px;line-height:1.35;font-weight:900}
+#kiboStatsView .kibo-leader-sub{font-size:12px;line-height:1.45}
+#kiboStatsView .kibo-leader-count{font-size:14px;font-weight:950;font-variant-numeric:tabular-nums}
+#kiboStatsView .kibo-leaderboard-empty{padding:32px 20px;border:1px dashed var(--line,#dce5f1);border-radius:17px;background:var(--panel2,#f8faff);line-height:1.6}
+#kiboStatsView .kibo-stats-note{margin:17px 2px 18px;font-size:12px;line-height:1.65;color:var(--muted,#718096)}
+#kiboStatsView .kibo-stats-refresh{width:100%;min-height:48px;border:1px solid var(--line,#dce5f1);border-radius:14px;padding:12px 18px;background:var(--panel2,#f7f9fc);color:var(--text,#172033);font-size:14px;font-weight:850;cursor:pointer;transition:border-color .18s ease,background .18s ease,transform .18s ease}
+#kiboStatsView .kibo-stats-refresh:hover{border-color:var(--dash-blue);background:var(--dash-blue-soft)}
+/* Reuse the same dashboard language if the detailed statistics widgets are present. */
+#kiboStatsView .kibo-stats-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:20px 0}
+#kiboStatsView .kibo-stat-card,#kiboStatsView .kibo-stats-panel{border-radius:18px;padding:18px;background:var(--panel2,#f7f9fc);border-color:var(--line,#e0e8f2);box-shadow:0 5px 18px rgba(30,60,100,.035)}
+#kiboStatsView .kibo-stat-card:focus-within,#kiboStatsView .kibo-stats-panel:focus-within{border-color:rgba(40,124,255,.55)}
+#kiboStatsView .kibo-stat-icon{background:var(--dash-blue-soft);color:var(--dash-blue)}
+#kiboStatsView .kibo-stats-progress{height:9px;border-radius:99px}
+#kiboStatsView .kibo-stats-week{gap:9px}
+body.night #kiboStatsView{background:var(--panel,#101c2e)!important;border-color:var(--line,#283b55)!important;box-shadow:0 18px 48px rgba(0,0,0,.16)!important}
+body.night #kiboStatsView .picker-brand,body.night #kiboStatsView .kibo-leader-row,body.night #kiboStatsView .kibo-my-rank,body.night #kiboStatsView .kibo-leaderboard-empty,body.night #kiboStatsView .kibo-stat-card,body.night #kiboStatsView .kibo-stats-panel,body.night #kiboStatsView .kibo-stats-refresh{background-color:var(--panel2,#17263b);border-color:var(--line,#2b3e59);color:var(--text,#edf3ff)}
+body.night #kiboStatsView .kibo-leader-row.is-me{background:linear-gradient(100deg,rgba(40,124,255,.15),transparent 72%),var(--panel2,#17263b);border-color:var(--dash-blue)}
+body.night #kiboStatsView .kibo-leaderboard-tabs{background:var(--panel2,#17263b);border-color:var(--line,#2b3e59)}
+body.night #kiboStatsView .kibo-leaderboard-tabs button.active{background:var(--dash-blue);color:#fff;border-color:var(--dash-blue)}
+@media(max-width:640px){
+ #kiboStatsView{width:100%!important;margin:8px auto!important;padding:20px 15px!important;border-radius:21px!important}
+ #kiboStatsView .kibo-stats-heading{padding-bottom:17px;margin-bottom:17px}
+ #kiboStatsView .picker-brand{margin-bottom:14px}
+ #kiboStatsView .kibo-stats-heading h1{font-size:clamp(25px,7vw,32px)}
+ #kiboStatsView .kibo-stats-heading>p{font-size:13px}
+ #kiboStatsView .kibo-leaderboard-tabs{display:flex;width:100%;margin-bottom:14px}
+ #kiboStatsView .kibo-leaderboard-tabs button{flex:1;padding:10px 8px;min-width:0;font-size:12px}
+ #kiboStatsView .kibo-my-rank{padding:14px 15px;min-height:58px;font-size:13px;margin-bottom:12px}
+ #kiboStatsView .kibo-leader-row{grid-template-columns:30px 38px minmax(0,1fr);gap:9px;padding:12px 11px;min-height:68px}
+ #kiboStatsView .kibo-leader-place{width:28px;height:30px;font-size:12px;border-radius:9px}
+ #kiboStatsView .kibo-leader-avatar{width:36px;height:36px}
+ #kiboStatsView .kibo-leader-name{font-size:13px}
+ #kiboStatsView .kibo-leader-sub{font-size:11px}
+ #kiboStatsView .kibo-leader-count{grid-column:3;justify-self:start;text-align:left;font-size:12px;margin-top:-4px;white-space:normal}
+ #kiboStatsView .kibo-stats-note{font-size:11px;margin:14px 1px}
+ #kiboStatsView .kibo-stats-grid{gap:9px}
+ #kiboStatsView .kibo-stat-card,#kiboStatsView .kibo-stats-panel{padding:13px;border-radius:15px}
+}
+@media(prefers-reduced-motion:reduce){#kiboStatsView *,#kiboStatsView *::before,#kiboStatsView *::after{transition:none!important;scroll-behavior:auto!important}}
+</style>
 
 </body>
 
