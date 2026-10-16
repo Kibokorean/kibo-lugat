@@ -1674,6 +1674,69 @@ body:not(.night) #kiboSectionsView #wordSectionGrid .section-text small { color:
 <style id="kibo-teacher-offline-styles">
 .kibo-teacher-notice,.kibo-teacher-card{border:1px solid var(--line);background:var(--panel);border-radius:18px;padding:18px;margin:14px 0;color:var(--text)}.kibo-teacher-card h2{margin:0 0 12px;font-size:18px}.kibo-teacher-card label{display:block;margin:12px 0 6px;font-weight:700;color:var(--text)}.kibo-teacher-card input,.kibo-teacher-card select{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--panel2);color:var(--text);margin-bottom:8px}.kibo-teacher-card button{border:0;border-radius:10px;padding:12px 16px;background:var(--blue,var(--accent,#0f766e));color:white;font-weight:800;cursor:pointer;margin-top:8px}.kibo-teacher-muted{color:var(--muted);font-size:13px}.kibo-teacher-class{padding:12px;border:1px solid var(--line);border-radius:12px;margin:8px 0}.kibo-offline-status{position:fixed;right:12px;bottom:12px;z-index:9999;border:1px solid var(--line);background:var(--panel);color:var(--text);padding:8px 12px;border-radius:999px;font-size:12px;box-shadow:0 4px 18px #0002}.kibo-offline-status.offline{border-color:#d97706;color:#b45309}
 </style>
+
+<style id="kibo-mobile-final-optimization">
+/* KIBO KOREAN — final responsive polish */
+*,*::before,*::after{box-sizing:border-box}
+html{width:100%;max-width:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{max-width:100%;min-width:0;overflow-x:hidden}
+img,svg,video,canvas,iframe{max-width:100%}
+input,select,textarea,button{max-width:100%;font:inherit}
+#kiboSideNav .side-logo{min-width:0}
+#kiboSideNav .side-mark{width:42px;height:42px;border-radius:50%;object-fit:cover;overflow:hidden;flex:0 0 42px}
+@media (max-width: 900px){
+  body{padding-left:0!important;padding-right:0!important}
+  .app{width:calc(100% - 24px)!important;max-width:760px!important;margin-left:auto!important;margin-right:auto!important}
+  .main{grid-template-columns:minmax(0,1fr)!important;min-width:0!important;gap:14px!important}
+  .main>*{min-width:0!important;width:100%;max-width:100%}
+  .study,.side,.right-panel,.picker-card,.settings-card,#kiboSettingsView section,#kiboSettingsView .settings-card{min-width:0;max-width:100%}
+  .top{grid-template-columns:minmax(0,1fr) auto!important;gap:10px!important}
+  .brand{min-width:0!important;gap:9px!important}
+  .brand h1,.brand small{overflow-wrap:anywhere}
+  #kiboMobileNav{display:flex;align-items:center;justify-content:space-around;gap:4px}
+  button,.btn,.nav-btn,.nav-link{touch-action:manipulation}
+  input,select,textarea{min-width:0;width:100%;font-size:16px!important}
+  table{display:block;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  pre,code{overflow-wrap:anywhere;word-break:break-word}
+  .picker-grid,#sectionGrid,#kiboHomeTiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width: 600px){
+  body{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))!important}
+  .app{width:calc(100% - 20px)!important;margin-bottom:18px!important}
+  .top{padding-top:10px!important;padding-bottom:12px!important}
+  .brand h1{font-size:17px!important;line-height:1.2}
+  .brand small{font-size:10px!important}
+  .brand .header-logo,.brand img{max-width:44px}
+  .main{margin-top:12px!important;gap:12px!important}
+  .study,.side,.right-panel,.picker-card,#kiboSettingsView .settings-card,#kiboSettingsView .profile-card{padding:14px!important;border-radius:18px!important}
+  .flashcard{width:100%;min-height:270px!important;border-radius:22px!important}
+  .word{font-size:clamp(32px,9vw,52px)!important;overflow-wrap:anywhere}
+  .current-stage-info{min-width:0}
+  .picker-grid,#sectionGrid,#kiboHomeTiles{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+  .section-card,.word-section-card,.picker-section-card,.lesson-card{min-width:0!important;padding:12px!important}
+  #kiboSettingsView{width:100%!important;max-width:100%!important;padding:12px 0 22px!important}
+  #kiboSettingsView h1,#kiboSettingsView h2{font-size:clamp(21px,6vw,28px)!important;line-height:1.25}
+  #kiboSettingsView input,#kiboSettingsView select,#kiboSettingsView textarea{width:100%!important;min-width:0!important}
+  #kiboSettingsView button{min-height:44px}
+  #kiboSettingsView .settings-actions,#kiboSettingsView .profile-actions,#kiboSettingsView .button-row{display:flex;flex-wrap:wrap;gap:9px}
+  #kiboSettingsView .settings-actions>*,#kiboSettingsView .profile-actions>*,#kiboSettingsView .button-row>*{flex:1 1 145px;min-width:0}
+  #kiboSettingsView .profile-avatar,#kiboSettingsView .avatar{max-width:88px;max-height:88px}
+  .modal,.dialog,.popup,.picker-card{max-width:calc(100vw - 24px)}
+  #kiboModuleMenu{max-width:calc(100vw - 20px)}
+}
+@media (max-width: 380px){
+  .app{width:calc(100% - 14px)!important}
+  .brand h1{font-size:15px!important}
+  .brand small{font-size:9px!important}
+  .picker-grid,#sectionGrid,#kiboHomeTiles{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}
+  .study,.side,.picker-card,#kiboSettingsView .settings-card{padding:11px!important}
+  .flashcard{min-height:240px!important}
+  .stepper{gap:4px!important}
+  .stepper>*{min-width:0}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
+
 </head>
 <body>
 <aside aria-label="Asosiy menyu" id="kiboSideNav">
