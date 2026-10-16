@@ -2806,9 +2806,17 @@ document.getElementById('next').style.display='none';
 renderSectionPicker();updateTopSteps();
 function updateHomeMasteredCount(){
   const el=document.getElementById('homeMasteredCount'); if(!el)return;
-  let count=completedSections.size*SECTION_SIZE;
-  // Include progress in the current section until it is marked complete.
-  if(activeSection>=0 && !completedSections.has(activeSection) && state && state.mastered instanceof Set) count+=state.mastered.size;
+  // Count individual words that have been correctly learned, not only completed sections.
+  let count=0;
+  try{
+    const saved=JSON.parse(localStorage.getItem('kibo_spaced_review_v1')||'{}');
+    if(saved && typeof saved==='object' && !Array.isArray(saved)){
+      count=Object.values(saved).filter(x=>x && typeof x==='object' && x.ko && x.uz).length;
+    }
+  }catch(e){}
+  // Preserve legacy completed-section progress if it predates the review store.
+  const legacyCount=Math.min(ALL_WORDS.length,completedSections.size*SECTION_SIZE);
+  count=Math.max(count,legacyCount);
   count=Math.min(ALL_WORDS.length,count);
   el.textContent=count.toLocaleString('uz-UZ');
 }
@@ -2843,6 +2851,8 @@ document.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()
     showPickerView(view);
   }
 }));
+document.addEventListener('kibo:review-updated',updateHomeMasteredCount);
+window.addEventListener('storage',function(e){if(!e.key||e.key==='kibo_spaced_review_v1'||e.key==='kibo_30word_sections_v3')updateHomeMasteredCount();});
 const _originalUpdateSide=updateSide;
 updateSide=function(){_originalUpdateSide();updateHomeMasteredCount();};
 const _originalFinishAllForHome=finishAll;
@@ -4883,8 +4893,13 @@ body.night .kibo-stat-card,body.night .kibo-stats-panel,body.night .kibo-stats-r
    const advanced=all.filter(x=>(Number(x.step)||0)>0).length;
    const sections=readSections().size;
    const recent=all.filter(x=>Number(x.last)>0&&Number(x.last)>=today-6*DAY&&Number(x.last)<today+DAY);
+   // Bosh sahifadagi hisoblagich bilan aynan bir xil manba va legacy progressni hisobga olamiz.
+   const homeCountEl=document.getElementById('homeMasteredCount');
+   const homeCount=homeCountEl?Number(String(homeCountEl.textContent||'').replace(/[^0-9]/g,'')):NaN;
+   const legacyCount=sections*30;
+   const masteredCount=Number.isFinite(homeCount)&&homeCount>=0?homeCount:Math.max(all.length,legacyCount);
    const percent=all.length?Math.round(advanced/all.length*100):0;
-   setText('kiboStatTracked',all.length.toLocaleString('uz-UZ'));
+   setText('kiboStatTracked',masteredCount.toLocaleString('uz-UZ'));
    setText('kiboStatDue',due.toLocaleString('uz-UZ'));
    setText('kiboStatAdvanced',advanced.toLocaleString('uz-UZ'));
    setText('kiboStatSections',sections.toLocaleString('uz-UZ'));
@@ -4902,6 +4917,8 @@ body.night .kibo-stat-card,body.night .kibo-stats-panel,body.night .kibo-stats-r
  document.addEventListener('click',function(e){const nav=e.target.closest('[data-nav="stats"]');if(nav){setTimeout(render,0);return}if(e.target.closest('#kiboStatsRefresh'))render()});
  document.addEventListener('kibo:review-updated',render);
  window.addEventListener('storage',function(e){if(!e.key||e.key===REVIEW_STORE||e.key===SECTION_STORE)render()});
+ document.addEventListener('visibilitychange',function(){if(!document.hidden)render()});
+ window.addEventListener('pageshow',render);
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',render);else render();
  window.kiboRenderStatistics=render;
 })();
