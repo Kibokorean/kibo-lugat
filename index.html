@@ -5090,3 +5090,40 @@ body.night .kibo-profile-editor,body.night .kibo-leader-row{background:var(--pan
   }catch(e){console.warn('KIBO review source-key migration was skipped safely:',e)}
 })();
 </script>
+
+
+<style id="kibo-settings-polish-v1">
+#kiboSettingsView{max-width:760px!important;margin:0 auto!important;padding:30px clamp(12px,3vw,28px)!important;text-align:left!important;color:var(--text)}
+#kiboSettingsView>h1{font-size:clamp(27px,3vw,34px);letter-spacing:-.035em;margin:0 0 24px;text-align:center}
+#kiboSettingsView .kibo-profile-editor{max-width:100%;margin:0 auto 18px;padding:clamp(18px,3vw,26px);border-radius:22px;box-shadow:0 12px 36px rgba(28,67,130,.07)}
+#kiboSettingsView .kibo-profile-preview{width:88px;height:88px;margin:0 0 22px;border:3px solid rgba(40,124,255,.18);box-shadow:0 5px 18px rgba(40,124,255,.12)}
+#kiboSettingsView .kibo-profile-editor label{margin-top:16px;font-size:12px;letter-spacing:.01em}
+#kiboSettingsView .kibo-profile-editor input[type=text]{min-height:46px;font-size:14px}
+#kiboSettingsView .kibo-profile-editor input[type=file]{min-height:46px;font-size:13px;cursor:pointer}
+#kiboSettingsView .kibo-profile-editor input[type=file]::file-selector-button{border:0;border-radius:9px;background:#eaf2ff;color:#175acb;padding:9px 12px;margin-right:10px;font-weight:800;cursor:pointer}
+#kiboSettingsView .kibo-profile-actions{gap:10px}
+#kiboSettingsView .kibo-profile-actions button{min-height:44px;border-radius:12px;padding:12px 17px;transition:transform .16s ease,box-shadow .16s ease}
+#kiboSettingsView .kibo-profile-actions button:first-child{box-shadow:0 5px 14px rgba(40,124,255,.2)}
+#kiboSettingsView .kibo-profile-actions button:hover{transform:translateY(-1px)}
+#kiboSettingsView #kiboProfileStatus{padding-top:4px;line-height:1.55}
+#kiboSettingsView>p[style*="color:var(--muted)"]{margin:22px 0 10px!important;text-align:center;font-size:13px;font-weight:750;letter-spacing:.01em}
+#kiboSettingsView #settingsThemeToggle{display:flex;align-items:center;justify-content:center;gap:9px;min-width:190px;min-height:46px;margin:0 auto 22px;padding:12px 22px!important;border-radius:14px!important;background:var(--panel)!important;box-shadow:0 5px 18px rgba(28,67,130,.06);font-size:14px;transition:border-color .15s ease,transform .15s ease}
+#kiboSettingsView #settingsThemeToggle:hover{transform:translateY(-1px);border-color:#287cff!important}
+#kiboSettingsView .kibo-cloud-card{max-width:100%;margin:0;padding:clamp(18px,3vw,26px);border-radius:22px;box-shadow:0 12px 36px rgba(28,67,130,.07)}
+#kiboSettingsView .kibo-cloud-title{align-items:flex-start;gap:13px;margin-bottom:18px}
+#kiboSettingsView .kibo-cloud-title>span{display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;border-radius:14px;background:#edf4ff;font-size:20px}
+#kiboSettingsView .kibo-cloud-title h2{font-size:18px;letter-spacing:-.02em;margin:1px 0 5px}
+#kiboSettingsView .kibo-cloud-title p{font-size:12px;line-height:1.55;margin:0;color:var(--muted)}
+#kiboSettingsView .kibo-cloud-card label{margin-top:15px}
+#kiboSettingsView .kibo-cloud-card input{min-height:45px}
+#kiboSettingsView .kibo-cloud-actions{gap:10px;margin-top:15px}
+#kiboSettingsView .kibo-cloud-actions button{min-height:45px;border-radius:12px;transition:transform .16s ease,filter .16s ease}
+#kiboSettingsView .kibo-cloud-actions button:hover{filter:brightness(.98);transform:translateY(-1px)}
+#kiboSettingsView .kibo-cloud-user{padding:11px 13px;border-radius:12px;background:var(--panel2);border:1px solid var(--line)}
+#kiboSettingsView .kibo-cloud-status{line-height:1.55;padding-top:3px}
+#kiboSettingsView .kibo-cloud-note{font-size:11px;line-height:1.65;color:var(--muted);margin-top:13px}
+body.night #kiboSettingsView .kibo-profile-editor input[type=file]::file-selector-button,body.dark #kiboSettingsView .kibo-profile-editor input[type=file]::file-selector-button{background:#233654;color:#cfe0ff}
+body.night #kiboSettingsView .kibo-cloud-title>span,body.dark #kiboSettingsView .kibo-cloud-title>span{background:#233654}
+@media(max-width:520px){#kiboSettingsView{padding:22px 12px!important}#kiboSettingsView>h1{margin-bottom:19px}#kiboSettingsView .kibo-profile-actions{flex-direction:column}#kiboSettingsView .kibo-profile-actions button{width:100%}#kiboSettingsView .kibo-cloud-actions{flex-direction:column}#kiboSettingsView .kibo-cloud-actions button{width:100%;flex:auto}#kiboSettingsView .kibo-profile-preview{margin-left:auto;margin-right:auto}}
+@media(prefers-reduced-motion:reduce){#kiboSettingsView *{transition:none!important}}
+</style>
