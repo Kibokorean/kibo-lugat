@@ -1,5 +1,3 @@
-KIBO KOREAN TOPIK TEST
+KIBO KOREAN TOPIK TEST — TEXT QUESTIONS
 
-index.html ga TOPIK TEST navigatsiyasi qo‘shildi. topik.html — 35th TOPIK II reading/listening interaktiv test interfeysi. topik-materials ichida foydalanuvchi yuborgan reading PDF, listening transcript PDF, answer sheet PDF va listening audio bor.
-
-Javob kalitlari foydalanuvchi taqdim etgan 35th-TOPIK-II-Answer-Sheet.pdf dan olindi. Natija brauzer localStorage da saqlanadi. Bu versiya server-side natija saqlash, Premium ruxsatlari yoki AI izohlarini qo‘shmaydi. PDF savollari manba sifatida ko‘rsatiladi; tarjima/izoh mavjud bo‘lmagan joylarda to‘qib chiqarilmaydi.
+Savollar endi PDF iframe sifatida emas, har bir savol uchun alohida matn ko‘rinishida chiqariladi. Savol matnlari foydalanuvchi taqdim etgan 35th TOPIK II PDF fayllaridan matn ajratish orqali olindi. Ayrim rasm/jadvalga asoslangan Reading savollarining grafik mazmuni PDF’dan matn sifatida ajralmagani sababli uydirma bilan to‘ldirilmadi. Listening audiosi alohida audio player orqali beriladi; audio har bir savolga vaqt oralig‘i bo‘yicha avtomatik bog‘lanmagan. Javob kalitlari foydalanuvchi taqdim etgan answer sheet’dan olingan. Natijalar localStorage’da saqlanadi.
