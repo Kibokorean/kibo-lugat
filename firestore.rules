@@ -16,7 +16,9 @@ service cloud.firestore {
       allow create, update, delete: if signedIn() && request.auth.uid == userId;
     }
     match /leaderboard/{uid} {
-      allow read: if signedIn();
+      // Public leaderboard: anyone can view ranking, but only each signed-in
+      // user can create/update/delete their own leaderboard document.
+      allow read: if true;
       allow create, update: if signedIn() && request.auth.uid == uid
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.keys().hasOnly(['uid','displayName','photoURL','allCount','weekCount','updatedAt']);

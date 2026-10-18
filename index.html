@@ -5,9 +5,7 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
 <title>KIBO KOREAN — So‘z yodlash tizimi</title>
-<link rel="icon" type="image/png" sizes="512x512" href="/favicon.png">
-<link rel="apple-touch-icon" href="/favicon.png">
-<link rel="icon" href="/favicon.ico" type="image/x-icon">
+<link rel="icon" href="favicon.ico" type="image/x-icon">
 <style>
 :root{
 --bg:#07111f;--panel:#0d1828;--panel2:#101d30;--soft:#142238;--text:#f5f8ff;--muted:#93a4bd;
@@ -1670,6 +1668,13 @@ body:not(.night) #kiboSectionsView #wordSectionGrid .section-text small { color:
 .kibo-cloud-title{display:flex;align-items:flex-start;gap:12px;margin-bottom:22px}.kibo-cloud-title>span{font-size:27px;display:grid;place-items:center;flex:0 0 48px;height:48px;border-radius:14px;background:var(--panel2)}.kibo-cloud-title h2{font-size:20px;margin:0 0 6px}.kibo-cloud-title p,.kibo-cloud-note{font-size:12px;line-height:1.6;color:var(--muted);margin:0}
 .kibo-login-form>label{display:block;font-size:12px;font-weight:800;margin:16px 0 7px}.kibo-cloud-card input:not([type=checkbox]){width:100%;min-width:0;box-sizing:border-box;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--text);padding:14px 15px;font:inherit;font-size:14px;outline-offset:3px;min-height:48px}.kibo-cloud-card input::placeholder{color:var(--muted);opacity:.9}.kibo-password-wrap{position:relative}.kibo-password-wrap input{padding-right:50px!important}.kibo-password-toggle{position:absolute;right:7px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:0;background:transparent;color:var(--muted);font-size:20px;cursor:pointer;border-radius:8px}.kibo-login-options{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:15px 0 22px}.kibo-cloud-card .kibo-login-options .kibo-remember{display:flex;align-items:center;gap:7px;margin:0;font-size:12px;font-weight:600;color:var(--text);cursor:pointer}.kibo-remember input[type=checkbox]{width:15px;height:15px;margin:0;accent-color:#39228f}.kibo-text-button{border:0;background:transparent;color:var(--text);font:inherit;font-size:12px;font-weight:750;cursor:pointer;padding:4px 0;text-decoration:none}.kibo-text-button:hover{text-decoration:underline}.kibo-continue-button{width:100%;min-height:49px;border:1px solid #3d2694;border-radius:9px;background:#39228f;color:#fff;font-size:16px;font-weight:800;cursor:pointer;padding:12px 16px}.kibo-login-divider{display:flex;align-items:center;gap:16px;margin:24px 0 20px;color:var(--text);font-size:15px;font-weight:500}.kibo-login-divider span{height:1px;flex:1;background:var(--line)}.kibo-login-divider b{font-weight:500;white-space:nowrap}.kibo-google-button{width:100%;min-height:46px;display:flex;align-items:center;justify-content:center;gap:10px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--text);font-weight:750;font-size:14px;cursor:pointer}.kibo-google-mark{font-family:Arial,sans-serif;font-size:20px;font-weight:900;color:#4285f4;text-shadow:1px 0 #34a853,-1px 0 #ea4335}.kibo-register-line{text-align:center;margin-top:17px;color:var(--muted);font-size:12px}.kibo-register-line .kibo-text-button{margin-left:4px;color:var(--text)}.kibo-cloud-actions{display:flex;gap:9px;margin-top:14px;flex-wrap:wrap}.kibo-cloud-actions button{flex:1;min-height:44px;padding:10px 14px;border:1px solid #287cff;border-radius:12px;background:#287cff;color:white;font-weight:850;cursor:pointer}.kibo-cloud-actions button.secondary{border-color:var(--line);background:var(--panel2);color:var(--text)}.kibo-cloud-actions button:disabled,.kibo-login-form button:disabled{opacity:.55;cursor:wait}.kibo-cloud-status{font-size:13px;font-weight:750;margin:15px 0 8px}.kibo-cloud-user{overflow-wrap:anywhere;font-size:13px;font-weight:800}.kibo-cloud-note{margin-top:12px}#kiboCloudSignedOut[hidden],#kiboCloudSignedIn[hidden]{display:none!important}
 @media(max-width:520px){.kibo-cloud-card{padding:18px 16px;margin:20px 0}.kibo-cloud-title{gap:10px}.kibo-cloud-title h2{font-size:18px}.kibo-login-options{align-items:flex-start}.kibo-login-divider{gap:10px}.kibo-cloud-actions{flex-direction:column}.kibo-cloud-actions button{width:100%;flex:auto}}
+/* Tizimga kirilgandan keyin faqat profildan chiqish tugmasi ko‘rinadi. */
+#kibo-cloud-auth.is-signed-in{max-width:100%;margin:12px auto 0;padding:0;border:0;background:transparent;box-shadow:none}
+#kibo-cloud-auth.is-signed-in>.kibo-cloud-title,#kibo-cloud-auth.is-signed-in>#kiboCloudStatus,#kibo-cloud-auth.is-signed-in>.kibo-cloud-note{display:none!important}
+#kibo-cloud-auth.is-signed-in #kiboCloudUser,#kibo-cloud-auth.is-signed-in #kiboCloudSync{display:none!important}
+#kibo-cloud-auth.is-signed-in #kiboCloudSignedIn .kibo-cloud-actions{margin:0;display:flex}
+#kibo-cloud-auth.is-signed-in #kiboCloudLogout{width:100%;min-height:44px;flex:1;border:1px solid var(--line);border-radius:12px;background:var(--panel2);color:var(--text);font-weight:800}
+
 </style>
 
 <link rel="manifest" href="manifest.json"><meta name="theme-color" content="#0f766e"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
@@ -1773,7 +1778,8 @@ input,select,textarea,button{max-width:100%;font:inherit}
 </section>
 <section aria-label="Sozlamalar" id="kiboSettingsView" style="display:none;text-align:center;padding:28px 8px">
 <h1>Sozlamalar</h1>
-<div class="kibo-profile-editor">
+<p id="kiboProfileAuthNotice" role="status" style="max-width:620px;margin:18px auto;padding:16px 18px;border:1px solid var(--line);border-radius:14px;background:var(--panel2);color:var(--muted);text-align:center">Profil nomi va rasmini o‘zgartirish uchun avval Google orqali ro‘yxatdan o‘ting yoki hisobingizga kiring.</p>
+<div class="kibo-profile-editor" id="kiboProfileEditor" hidden>
   <div class="kibo-profile-preview"><img id="kiboProfilePreview" alt="Profil rasmi" src="" hidden><div id="kiboProfileInitial" aria-hidden="true">K</div></div>
   <label for="kiboProfileName">Profil nomi</label><input id="kiboProfileName" type="text" maxlength="40" placeholder="Ismingiz yoki taxallusingiz" autocomplete="nickname">
   <label for="kiboProfileImage">Profil rasmi</label><input id="kiboProfileImage" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
@@ -1785,18 +1791,12 @@ input,select,textarea,button{max-width:100%;font:inherit}
 <div id="kibo-cloud-auth" class="kibo-cloud-card" aria-live="polite">
   <div class="kibo-cloud-title"><span aria-hidden="true">☁️</span><div><h2>Login va bulutli saqlash</h2><p>Progressingni hisobingga bog‘la va boshqa qurilmada davom et.</p></div></div>
   <div id="kiboCloudSignedOut" class="kibo-login-form">
-    <label for="kiboCloudEmail">Email Address</label>
-    <input id="kiboCloudEmail" type="email" autocomplete="email" placeholder="Enter Email Address" />
-    <label for="kiboCloudPassword">Password</label>
-    <div class="kibo-password-wrap"><input id="kiboCloudPassword" type="password" autocomplete="current-password" minlength="6" placeholder="Enter Password" /><button type="button" id="kiboCloudPasswordToggle" class="kibo-password-toggle" aria-label="Parolni ko‘rsatish" title="Parolni ko‘rsatish">◉</button></div>
-    <div class="kibo-login-options"><label class="kibo-remember"><input id="kiboCloudRemember" type="checkbox" checked /> <span>Remember this device</span></label><button type="button" id="kiboCloudForgot" class="kibo-text-button">Forget password?</button></div>
-    <button type="button" id="kiboCloudLogin" class="kibo-continue-button">Continue</button>
-    <p class="kibo-register-line" id="kiboRegisterLine">Hisobingiz yo‘qmi? <button type="button" id="kiboCloudShowSignup" class="kibo-text-button">Sign up</button></p>
-    <div class="kibo-login-divider"><span></span><b>Continue with</b><span></span></div>
-    <button type="button" id="kiboCloudGoogle" class="kibo-google-button"><span class="kibo-google-mark" aria-hidden="true">G</span> Google</button>
+    <div class="kibo-login-divider"><span></span><b>Google orqali davom eting</b><span></span></div>
+    <button type="button" id="kiboCloudGoogle" class="kibo-google-button"><span class="kibo-google-mark" aria-hidden="true">G</span> Google orqali kirish / ro‘yxatdan o‘tish</button>
+    <p class="kibo-cloud-note">Hisob yaratish va kirish faqat Google orqali amalga oshiriladi.</p>
   </div>
-  <div id="kiboCloudSignedIn" hidden><p id="kiboCloudUser" class="kibo-cloud-user"></p><div class="kibo-cloud-actions"><button type="button" id="kiboCloudSync">Hozir sinxronlash</button><button type="button" id="kiboCloudLogout" class="secondary">Chiqish</button></div></div>
-  <p id="kiboCloudStatus" class="kibo-cloud-status" role="status">Mavjud hisobingiz bilan email-parol yoki Google orqali kiring.</p>
+  <div id="kiboCloudSignedIn" hidden><p id="kiboCloudUser" class="kibo-cloud-user"></p><div class="kibo-cloud-actions"><button type="button" id="kiboCloudSync">Hozir sinxronlash</button><button type="button" id="kiboCloudLogout" class="secondary">Profildan chiqish</button></div></div>
+  <p id="kiboCloudStatus" class="kibo-cloud-status" role="status">Google orqali kiring yoki yangi hisob yarating.</p>
   <p class="kibo-cloud-note">Mahalliy progress o‘chirilmaydi. Birinchi sinxronlashda brauzer va bulutdagi ma’lumotlar ehtiyotkorlik bilan birlashtiriladi. Hisobing Firebase orqali boshqariladi. Bulutda faqat lug‘at progressi saqlanadi.</p>
 </div>
 </section>
@@ -4930,7 +4930,7 @@ body.night .kibo-stat-card,body.night .kibo-stats-panel,body.night .kibo-stats-r
  if(!statusEl)return;
  let auth=null,db=null,user=null,syncTimer=null,syncBusy=false;
  const setStatus=(message,type='info')=>{statusEl.textContent=message;statusEl.style.color=type==='error'?'#dc3545':type==='ok'?'#16803d':'var(--muted)'};
- const setBusy=busy=>['kiboCloudLogin','kiboCloudGoogle','kiboCloudSync','kiboCloudLogout','kiboCloudForgot','kiboCloudShowSignup'].forEach(id=>{const b=$(id);if(b)b.disabled=busy});
+ const setBusy=busy=>['kiboCloudGoogle','kiboCloudSync','kiboCloudLogout'].forEach(id=>{const b=$(id);if(b)b.disabled=busy});
  const readLocal=()=>{const out={};for(const key of PROGRESS_KEYS){try{const raw=localStorage.getItem(key);if(raw!==null)out[key]=JSON.parse(raw)}catch(e){console.warn('KIBO progress read skipped',key,e)}}return out};
  const mergeValue=(local,cloud)=>{
    if(Array.isArray(local)&&Array.isArray(cloud)){const out=cloud.slice(),seen=new Set(out.map(v=>JSON.stringify(v)));for(const v of local){const k=JSON.stringify(v);if(!seen.has(k)){out.push(v);seen.add(k)}}return out}
@@ -4941,26 +4941,9 @@ body.night .kibo-stat-card,body.night .kibo-stats-panel,body.night .kibo-stats-r
  const cloudWrite=async progress=>{await db.collection('users').doc(user.uid).set({progress,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true})};
  const sync=async()=>{if(!auth||!user||syncBusy)return;syncBusy=true;setBusy(true);try{const local=readLocal(),cloud=await cloudRead(),merged={...cloud};for(const key of PROGRESS_KEYS){if(key in local)merged[key]=key in cloud?mergeValue(local[key],cloud[key]):local[key];else if(key in cloud)merged[key]=cloud[key]}for(const key of PROGRESS_KEYS){if(key in merged){try{localStorage.setItem(key,JSON.stringify(merged[key]))}catch(e){console.warn('KIBO local progress restore skipped',key,e)}}}await cloudWrite(merged);setStatus('Lug‘at progressi sinxronlandi · '+new Date().toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'}),'ok');try{window.kiboRenderStatistics?.()}catch(e){}}catch(e){console.error('KIBO Firebase sync failed',e);setStatus('Sinxronlash amalga oshmadi: '+(e.code||e.message||'Firebase xatosi')+'. Mahalliy progress saqlanib qoldi. Firestore qoidalarini tekshir.','error')}finally{syncBusy=false;setBusy(false)}};
  const queueSync=()=>{if(!user||syncBusy)return;clearTimeout(syncTimer);syncTimer=setTimeout(()=>sync(),1600)};
- const showSession=async current=>{user=current||null;$('kiboCloudSignedOut').hidden=!!user;$('kiboCloudSignedIn').hidden=!user;if(user){$('kiboCloudUser').textContent='Kirish: '+(user.email||user.displayName||'KIBO foydalanuvchisi');setStatus('Hisob ulandi. Lug‘at progressi tekshirilmoqda…');try{const userRef=db.collection('users').doc(user.uid);const userSnap=await userRef.get();const accountData={accountEmail:user.email||null,accountDisplayName:user.displayName||null,lastLoginAt:firebase.firestore.FieldValue.serverTimestamp()};if(!userSnap.exists)accountData.registeredAt=firebase.firestore.FieldValue.serverTimestamp();await userRef.set(accountData,{merge:true})}catch(e){console.warn('KIBO account registration metadata:',e)}await sync()}else setStatus('Mavjud hisobingiz bilan email-parol yoki Google orqali kiring.')};
+ const showSession=async current=>{user=current||null;$('kiboCloudSignedOut').hidden=!!user;$('kiboCloudSignedIn').hidden=!user;$('kibo-cloud-auth').classList.toggle('is-signed-in',!!user);if(user){$('kiboCloudUser').textContent='Kirish: '+(user.email||user.displayName||'KIBO foydalanuvchisi');setStatus('Hisob ulandi. Lug‘at progressi tekshirilmoqda…');try{const userRef=db.collection('users').doc(user.uid);const userSnap=await userRef.get();const accountData={accountEmail:user.email||null,accountDisplayName:user.displayName||null,lastLoginAt:firebase.firestore.FieldValue.serverTimestamp()};if(!userSnap.exists)accountData.registeredAt=firebase.firestore.FieldValue.serverTimestamp();await userRef.set(accountData,{merge:true})}catch(e){console.warn('KIBO account registration metadata:',e)}await sync()}else setStatus('Google orqali kiring yoki yangi hisob yarating.')};
  const init=async()=>{if(!window.firebase||!firebase.initializeApp||!firebase.auth||!firebase.firestore){setStatus('Firebase kutubxonasi yuklanmadi. Internet ulanishini tekshir.','error');return}if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);auth=firebase.auth();db=firebase.firestore();auth.onAuthStateChanged(current=>{showSession(current).catch(e=>{console.error(e);setStatus('Hisob holatini ochib bo‘lmadi: '+(e.message||e),'error')})});};
- $('kiboCloudLogin').addEventListener('click',async()=>{const email=$('kiboCloudEmail').value.trim(),password=$('kiboCloudPassword').value;if(!email||!password){setStatus('Email va parolni kiriting.','error');return}setBusy(true);try{await auth.setPersistence($('kiboCloudRemember').checked?firebase.auth.Auth.Persistence.LOCAL:firebase.auth.Auth.Persistence.SESSION);await auth.signInWithEmailAndPassword(email,password);setStatus('Muvaffaqiyatli kirdingiz.','ok')}catch(e){setStatus('Kirish amalga oshmadi: '+(e.code||e.message),'error')}finally{setBusy(false)}});
- let signupMode=false;
- const signupButton=$('kiboCloudShowSignup');
- if(signupButton){signupButton.addEventListener('click',async()=>{
-   const email=$('kiboCloudEmail').value.trim(),password=$('kiboCloudPassword').value;
-   if(!signupMode){signupMode=true;$('kiboCloudLogin').textContent='Hisob yaratish';signupButton.textContent='Login';const line=$('kiboRegisterLine');if(line)line.firstChild.textContent='Hisobingiz bormi? ';$('kiboCloudPassword').setAttribute('autocomplete','new-password');setStatus('Yangi hisob yaratish uchun email va kamida 6 belgili parol kiriting.');return;}
-   if(!email||!password){setStatus('Hisob yaratish uchun email va parolni kiriting.','error');return}
-   if(password.length<6){setStatus('Parol kamida 6 ta belgidan iborat bo‘lishi kerak.','error');$('kiboCloudPassword').focus();return}
-   setBusy(true);try{
-     await auth.setPersistence($('kiboCloudRemember').checked?firebase.auth.Auth.Persistence.LOCAL:firebase.auth.Auth.Persistence.SESSION);
-     await auth.createUserWithEmailAndPassword(email,password);
-     signupMode=false;$('kiboCloudLogin').textContent='Continue';signupButton.textContent='Sign up';const line=$('kiboRegisterLine');if(line)line.firstChild.textContent='Hisobingiz yo‘qmi? ';$('kiboCloudPassword').setAttribute('autocomplete','current-password');setStatus('Hisob muvaffaqiyatli yaratildi.','ok');
-   }catch(e){setStatus('Hisob yaratilmadi: '+(e.code||e.message||'Firebase xatosi'),'error')}finally{setBusy(false)}
- });}
-
- $('kiboCloudPasswordToggle').addEventListener('click',()=>{const input=$('kiboCloudPassword'),show=input.type==='password';input.type=show?'text':'password';$('kiboCloudPasswordToggle').textContent=show?'◎':'◉';$('kiboCloudPasswordToggle').setAttribute('aria-label',show?'Parolni yashirish':'Parolni ko‘rsatish')});
- $('kiboCloudForgot').addEventListener('click',async()=>{const email=$('kiboCloudEmail').value.trim();if(!email){setStatus('Parolni tiklash uchun avval email manzilingizni kiriting.','error');$('kiboCloudEmail').focus();return}setBusy(true);try{await auth.sendPasswordResetEmail(email);setStatus('Parolni tiklash havolasi emailingizga yuborildi.','ok')}catch(e){setStatus('Tiklash xabari yuborilmadi: '+(e.code||e.message),'error')}finally{setBusy(false)}});
- $('kiboCloudGoogle').addEventListener('click',async()=>{setBusy(true);try{await auth.setPersistence($('kiboCloudRemember').checked?firebase.auth.Auth.Persistence.LOCAL:firebase.auth.Auth.Persistence.SESSION);const provider=new firebase.auth.GoogleAuthProvider();await auth.signInWithPopup(provider);setStatus('Google orqali muvaffaqiyatli kirdingiz.','ok')}catch(e){if(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-this-environment'){try{await auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());return}catch(err){e=err}}setStatus('Google orqali kirish amalga oshmadi: '+(e.code||e.message),'error')}finally{setBusy(false)}});
+ $('kiboCloudGoogle').addEventListener('click',async()=>{setBusy(true);try{await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);const provider=new firebase.auth.GoogleAuthProvider();await auth.signInWithPopup(provider);setStatus('Google orqali muvaffaqiyatli kirdingiz.','ok')}catch(e){if(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-this-environment'){try{await auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());return}catch(err){e=err}}setStatus('Google orqali kirish amalga oshmadi: '+(e.code||e.message),'error')}finally{setBusy(false)}});
  $('kiboCloudSync').addEventListener('click',sync);
  $('kiboCloudLogout').addEventListener('click',async()=>{setBusy(true);try{await auth.signOut();user=null;setStatus('Hisobdan chiqildi. Mahalliy lug‘at progressi qurilmada saqlanadi.','ok')}catch(e){setStatus('Chiqish amalga oshmadi: '+(e.code||e.message),'error')}finally{setBusy(false)}});
  const originalSetItem=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){originalSetItem.call(this,key,value);if(this===localStorage&&PROGRESS_KEYS.includes(String(key)))queueSync()};
@@ -5007,6 +4990,7 @@ body.night .kibo-profile-editor,body.night .kibo-leader-row{background:var(--pan
  const $=id=>document.getElementById(id), REVIEW_KEY='kibo_spaced_review_v1';
  let db=null,auth=null,currentUser=null,period='week',profileImageData=null,leaderCache=[];
  const setProfileStatus=(msg,error=false)=>{const el=$('kiboProfileStatus');if(el){el.textContent=msg;el.style.color=error?'#dc3545':'var(--muted)'}};
+ function setProfileAuthVisibility(user){const editor=$('kiboProfileEditor'),notice=$('kiboProfileAuthNotice');const signedIn=!!user;if(editor)editor.hidden=!signedIn;if(notice)notice.hidden=signedIn;if(!signedIn){profileImageData=null;const input=$('kiboProfileImage');if(input)input.value='';const name=$('kiboProfileName');if(name)name.value='';preview('K',null);setProfileStatus('Profilni o‘zgartirish uchun Google orqali ro‘yxatdan o‘ting yoki hisobingizga kiring.')} }
  const safeText=v=>String(v||'').replace(/[&<>"\']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"\'":'&#39;'}[c]));
  function localProgress(){try{const x=JSON.parse(localStorage.getItem(REVIEW_KEY)||'{}');return x&&typeof x==='object'&&!Array.isArray(x)?x:{}}catch(e){return {}}}
  function counts(progress){const items=Object.values(progress||{}).filter(x=>x&&typeof x==='object'&&x.ko&&x.uz);const now=Date.now(),week=now-7*86400000;return {all:items.filter(x=>(Number(x.step)||0)>0).length,week:items.filter(x=>(Number(x.step)||0)>0&&Number(x.last)>=week&&Number(x.last)<=now+86400000).length}}
@@ -5018,7 +5002,7 @@ body.night .kibo-profile-editor,body.night .kibo-leader-row{background:var(--pan
  function renderLeaderboard(){const list=$('kiboLeaderboard'),my=$('kiboMyRank');if(!list||!my)return;const key=period==='week'?'weekCount':'allCount';const sorted=leaderCache.slice().sort((a,b)=>(Number(b[key])||0)-(Number(a[key])||0)||String(a.displayName||'').localeCompare(String(b.displayName||'')));list.innerHTML='';if(!sorted.length){list.innerHTML='<div class="kibo-leaderboard-empty">Hozircha reyting uchun ma’lumot yo‘q. So‘z yodlab, hisobingizni sinxronlang.</div>';my.textContent='Reytingda hali ma’lumot yo‘q.';return}const mine=sorted.findIndex(x=>currentUser&&x.uid===currentUser.uid);my.textContent=currentUser?(mine>=0?`Sizning o‘rningiz: ${mine+1}-o‘rin · ${(Number(sorted[mine][key])||0).toLocaleString('uz-UZ')} ta so‘z`:'Sizning hisobingiz reytingga hali qo‘shilmagan. Sozlamalardan profilni saqlang yoki progressni sinxronlang.'):'Shaxsiy o‘rningizni ko‘rish uchun hisobingizga kiring.';sorted.slice(0,50).forEach((u,i)=>{const row=document.createElement('div');row.className='kibo-leader-row'+(currentUser&&u.uid===currentUser.uid?' is-me':'');const place=document.createElement('div');place.className='kibo-leader-place';place.textContent=i===0?'🥇':i===1?'🥈':i===2?'🥉':String(i+1);const avatar=document.createElement(u.photoURL?'img':'div');avatar.className='kibo-leader-avatar';if(u.photoURL){avatar.src=u.photoURL;avatar.alt=''}else avatar.textContent=(u.displayName||'K').trim().charAt(0).toUpperCase();const name=document.createElement('div');const n=document.createElement('div');n.className='kibo-leader-name';n.textContent=u.displayName||'KIBO o‘quvchisi';const sub=document.createElement('div');sub.className='kibo-leader-sub';sub.textContent=currentUser&&u.uid===currentUser.uid?'Bu siz':'KIBO o‘quvchisi';name.append(n,sub);const count=document.createElement('div');count.className='kibo-leader-count';count.textContent=(Number(u[key])||0).toLocaleString('uz-UZ')+' ta so‘z';row.append(place,avatar,name,count);list.appendChild(row)})}
  async function refreshLeaderboard(){const list=$('kiboLeaderboard');if(!db){if(list)list.innerHTML='<div class="kibo-leaderboard-empty">Reytingni yuklash uchun internet va Firebase kerak.</div>';return}if(list)list.innerHTML='<div class="kibo-leaderboard-empty">Reyting yangilanmoqda…</div>';try{if(currentUser)await publishScore();const snap=await db.collection('leaderboard').get();leaderCache=snap.docs.map(doc=>({uid:doc.id,...doc.data()}));renderLeaderboard()}catch(e){console.error('Leaderboard load failed',e);if(list)list.innerHTML='<div class="kibo-leaderboard-empty">Reyting yuklanmadi. Firestore Rules bo‘limidagi leaderboard ruxsatlarini tekshiring.</div>';if($('kiboMyRank'))$('kiboMyRank').textContent='Reyting ma’lumotlarini olishda xatolik.'}}
  $('kiboProfileName')?.addEventListener('input',()=>preview($('kiboProfileName').value,profileImageData));$('kiboProfileImage')?.addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{profileImageData=await resizeImage(file);preview($('kiboProfileName').value,profileImageData);setProfileStatus('Rasm tayyor. Saqlash tugmasini bosing.')}catch(err){setProfileStatus(err.message||'Rasmni o‘qib bo‘lmadi.',true)}});$('kiboSaveProfile')?.addEventListener('click',saveProfile);$('kiboRemoveProfileImage')?.addEventListener('click',()=>{profileImageData=null;$('kiboProfileImage').value='';preview($('kiboProfileName').value,null);setProfileStatus('Rasm olib tashlandi. O‘zgarishni saqlashni unutmang.')});document.querySelectorAll('[data-kibo-rank]').forEach(b=>b.addEventListener('click',()=>{period=b.dataset.kiboRank;document.querySelectorAll('[data-kibo-rank]').forEach(x=>x.classList.toggle('active',x===b));renderLeaderboard()}));$('kiboStatsRefresh')?.addEventListener('click',refreshLeaderboard);document.addEventListener('click',e=>{if(e.target.closest('[data-nav="stats"]'))setTimeout(refreshLeaderboard,200);if(e.target.closest('[data-nav="settings"]'))setTimeout(loadProfile,200)});window.addEventListener('storage',e=>{if(!e.key||e.key===REVIEW_KEY){if(currentUser)publishScore().then(refreshLeaderboard).catch(console.warn)}});document.addEventListener('kibo:review-updated',()=>{if(currentUser)publishScore().then(refreshLeaderboard).catch(console.warn)});
- function init(){if(!window.firebase||!firebase.apps?.length)return;auth=firebase.auth();db=firebase.firestore();auth.onAuthStateChanged(async u=>{currentUser=u||null;if(currentUser){await loadProfile();try{await publishScore()}catch(e){console.warn('KIBO leaderboard publish',e)}}else{preview('K',null);setProfileStatus('Profilni saqlash va reytingga qo‘shilish uchun hisobingizga kiring.')}refreshLeaderboard()})}
+ function init(){const editor=$('kiboProfileEditor');if(editor)editor.hidden=true;const notice=$('kiboProfileAuthNotice');if(notice)notice.hidden=false;if(!window.firebase||!firebase.apps?.length)return;auth=firebase.auth();db=firebase.firestore();auth.onAuthStateChanged(async u=>{currentUser=u||null;setProfileAuthVisibility(currentUser);if(currentUser){await loadProfile();try{await publishScore()}catch(e){console.warn('KIBO leaderboard publish',e)}}refreshLeaderboard()})}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
@@ -5251,6 +5235,7 @@ body.night #kiboStatsView .kibo-leaderboard-tabs button.active{background:var(--
 
 
 <style id="kibo-settings-polish-v1">
+#kiboProfileEditor[hidden],#kiboProfileAuthNotice[hidden]{display:none!important}
 #kiboSettingsView{max-width:760px!important;margin:0 auto!important;padding:30px clamp(12px,3vw,28px)!important;text-align:left!important;color:var(--text)}
 #kiboSettingsView>h1{font-size:clamp(27px,3vw,34px);letter-spacing:-.035em;margin:0 0 24px;text-align:center}
 #kiboSettingsView .kibo-profile-editor{max-width:100%;margin:0 auto 18px;padding:clamp(18px,3vw,26px);border-radius:22px;box-shadow:0 12px 36px rgba(28,67,130,.07)}
@@ -5285,3 +5270,44 @@ body.night #kiboSettingsView .kibo-cloud-title>span,body.dark #kiboSettingsView 
 @media(max-width:520px){#kiboSettingsView{padding:22px 12px!important}#kiboSettingsView>h1{margin-bottom:19px}#kiboSettingsView .kibo-profile-actions{flex-direction:column}#kiboSettingsView .kibo-profile-actions button{width:100%}#kiboSettingsView .kibo-cloud-actions{flex-direction:column}#kiboSettingsView .kibo-cloud-actions button{width:100%;flex:auto}#kiboSettingsView .kibo-profile-preview{margin-left:auto;margin-right:auto}}
 @media(prefers-reduced-motion:reduce){#kiboSettingsView *{transition:none!important}}
 </style>
+
+
+<!-- KIBO: Google login gate before starting vocabulary memorization -->
+<style id="kibo-study-auth-gate-style">
+#kiboStudyAuthGate[hidden]{display:none!important}#kiboStudyAuthGate{position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(8,18,35,.68);backdrop-filter:blur(5px)}
+#kiboStudyAuthGate .kibo-study-auth-dialog{width:min(100%,430px);padding:26px;border:1px solid var(--line,#d6e2f4);border-radius:22px;background:var(--panel,#fff);color:var(--text,#17243b);box-shadow:0 24px 80px rgba(0,0,0,.25);text-align:center}
+#kiboStudyAuthGate .kibo-study-auth-icon{width:58px;height:58px;margin:0 auto 14px;display:grid;place-items:center;border-radius:18px;background:#287cff;color:white;font-size:27px}
+#kiboStudyAuthGate h2{margin:0 0 10px;font-size:24px;line-height:1.2}#kiboStudyAuthGate p{margin:0 0 20px;color:var(--muted,#71809a);line-height:1.6;font-size:14px}
+#kiboStudyAuthGate .kibo-study-auth-continue{width:100%;min-height:48px;border:0;border-radius:12px;background:#287cff;color:white;font-weight:850;font-size:15px;cursor:pointer}
+#kiboStudyAuthGate .kibo-study-auth-cancel{margin-top:12px;border:0;background:transparent;color:var(--muted,#71809a);font-weight:750;cursor:pointer;padding:9px 14px}
+body.night #kiboStudyAuthGate .kibo-study-auth-dialog,body.dark #kiboStudyAuthGate .kibo-study-auth-dialog{background:var(--panel,#101d30);border-color:var(--line,#263b57)}
+</style>
+<div id="kiboStudyAuthGate" hidden role="dialog" aria-modal="true" aria-labelledby="kiboStudyAuthTitle">
+ <div class="kibo-study-auth-dialog">
+  <div class="kibo-study-auth-icon" aria-hidden="true">📚</div>
+  <h2 id="kiboStudyAuthTitle">So‘z yodlash uchun kiring</h2>
+  <p>Kitobdagi so‘zlarni yodlash va natijalaringizni saqlash uchun Google orqali bepul hisob yarating yoki hisobingizga kiring.</p>
+  <button type="button" class="kibo-study-auth-continue" id="kiboStudyGoogleContinue">Google orqali kirish / ro‘yxatdan o‘tish</button>
+  <button type="button" class="kibo-study-auth-cancel" id="kiboStudyAuthCancel">Hozir emas</button>
+ </div>
+</div>
+<script id="kibo-study-auth-gate">
+(function(){
+ 'use strict';
+ var modal=document.getElementById('kiboStudyAuthGate');
+ var pending=null;
+ var selectors=['selectWordSection','selectSsokSection','selectSsokMidSection','selectSsokAdvancedSection','selectTopik30DaysSection','selectBook1ASection','selectBook1BSection','selectBook2ASection','selectBook2BSection','selectBook3ASection','selectBook3BSection'];
+ function signedIn(){try{return !!(window.firebase&&firebase.apps&&firebase.apps.length&&firebase.auth().currentUser)}catch(e){return false}}
+ function openGate(name,args){pending={name:name,args:Array.prototype.slice.call(args||[])};if(modal)modal.hidden=false;}
+ function closeGate(){if(modal)modal.hidden=true;}
+ selectors.forEach(function(name){var original=window[name];if(typeof original!=='function'||original.__kiboAuthGateWrapped)return;var wrapped=function(){if(!signedIn()){openGate(name,arguments);return;}return original.apply(this,arguments)};wrapped.__kiboAuthGateWrapped=true;window[name]=wrapped;});
+ var continueBtn=document.getElementById('kiboStudyGoogleContinue');
+ if(continueBtn)continueBtn.addEventListener('click',function(){var b=document.getElementById('kiboCloudGoogle');if(b){b.click()}else{var status=document.getElementById('kiboCloudStatus');if(status)status.textContent='Google orqali kirish tugmasi topilmadi. Sahifani yangilang.';}});
+ document.getElementById('kiboStudyAuthCancel')?.addEventListener('click',function(){pending=null;closeGate()});
+ modal?.addEventListener('click',function(e){if(e.target===modal){pending=null;closeGate()}});
+ document.addEventListener('keydown',function(e){if(e.key==='Escape'&&modal&&!modal.hidden){pending=null;closeGate()}});
+ function resume(){if(!signedIn()||!pending)return;var task=pending;pending=null;closeGate();var fn=window[task.name];if(typeof fn==='function')setTimeout(function(){fn.apply(window,task.args)},0)}
+ function attach(){if(window.firebase&&firebase.apps&&firebase.apps.length&&firebase.auth){firebase.auth().onAuthStateChanged(resume);resume();return true}return false}
+ if(!attach()){var tries=0;var timer=setInterval(function(){tries++;if(attach()||tries>40)clearInterval(timer)},250)}
+})();
+</script>
