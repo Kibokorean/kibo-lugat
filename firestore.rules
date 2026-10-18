@@ -14,6 +14,10 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if (signedIn() && request.auth.uid == userId) || activeTeacher();
       allow create, update, delete: if signedIn() && request.auth.uid == userId;
+      // Personal flashcard sets are private to their Google-authenticated owner.
+      match /flashcardSets/{setId} {
+        allow read, create, update, delete: if signedIn() && request.auth.uid == userId;
+      }
     }
     match /leaderboard/{uid} {
       // Public leaderboard: anyone can view ranking, but only each signed-in
