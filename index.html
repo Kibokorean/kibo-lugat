@@ -1837,6 +1837,7 @@ body.night #kiboStatsView{border:0!important;box-shadow:none!important}
 </div></section>
 <section aria-label="Yodlangan so‘zlar" class="kibo-home-summary" id="kiboHomeSummary">
 <div class="picker-brand">KIBO KOREAN</div>
+<p id="kiboWelcomeGreeting" class="kibo-welcome-greeting" aria-live="polite"></p>
 <h1>Yodlangan so‘zlar</h1>
 <div class="home-mastered-number" id="homeMasteredCount">0</div>
 
@@ -5111,6 +5112,135 @@ body.night #kiboStatsView .kibo-leaderboard-tabs button.active{background:var(--
 
 
 
+
+<style id="kibo-random-welcome-greeting-style">
+.kibo-welcome-greeting{margin:0 0 12px!important;color:var(--text);font-size:clamp(14px,2.2vw,17px);line-height:1.45;font-weight:750;letter-spacing:-.01em}
+.kibo-home-summary .kibo-welcome-greeting{padding:0 4px}
+@media(max-width:520px){.kibo-welcome-greeting{font-size:14px;margin-bottom:8px!important}}
+</style>
+<script id="kibo-random-welcome-greeting">
+(function(){
+ 'use strict';
+ var greetings = [
+  "Ha, keldingmi? Lug‘at seni sog‘inibdi 😂",
+  "Yana bizdamisan? Uy manzilingni o‘zgartirib yuborma 😏",
+  "So‘zlarni yodladingmi yoki shunchaki aylanib yuribsanmi? 😂",
+  "O‘tgan safar yodlagan so‘zlaring seni taniydimi? 😭",
+  "Voy, student kelibdi! Kitoblarni yashiringlar 😂",
+  "Bugun ham xotirang bilan urushamizmi? 😎",
+  "Keldingmi? Qani, miyaga yangi mehmonlar joylaymiz 😂",
+  "Lug‘at seni ko‘rib hayajonlanib ketdi shekilli 😭",
+  "Bugun nechta so‘zni unutishga ulguramiz? 😂",
+  "Xo‘sh, bugun ham koreys tilini hayron qoldiramizmi?",
+  "Yana keldingmi? Demak, hali umid bor ekan 😂",
+  "So‘zlarni yodlashga keldingmi yoki ular bilan uchrashuvgami? 😏",
+  "Bugun xotirang ishlasa, bayram qilamiz 😂",
+  "Student, so‘zlar seni kutib soqol chiqaribdi-ku 😭",
+  "KIBO’ga kirding, endi miyangni ham olib kir 😂",
+  "Qani, bugun nechta koreyscha so‘zni qo‘lga olamiz?",
+  "So‘zlar qochib ketmasidan oldin boshlay qol 😂",
+  "Bugun xotirangga yangi versiya o‘rnatamizmi? 😎",
+  "O‘tgan safargi so‘zlar bilan yarashib oldingmi? 😂",
+  "Ha, yana lug‘at bilan uchrashuv. Romantika boshlandi 😭",
+  "Koreyscha so‘zlar seni ko‘rib: «Yana shu bola!» deyapti 😂",
+  "Bugun miyangni ozgina qiynab qo‘ysak maylimi? 😏",
+  "Keldingmi, student? So‘zlar allaqachon saf tortgan 😂",
+  "Qani, xotirang bugun bizni uyaltirmasin 😭",
+  "Bugun ham so‘zlarni ko‘rib, ertaga begona demaymizmi? 😂",
+  "Lug‘atni och, qo‘rqma, hozircha tishlamaydi 😎",
+  "So‘zlar bilan tanishib chiqamizmi yoki hali erta-mi? 😂",
+  "Bugun nechta so‘zni xotirangga noqonuniy joylaymiz? 😭",
+  "Koreys tili bilan munosabatlaring yaxshimi o‘zi? 😂",
+  "Qani, bugun xotirangni sinovdan o‘tkazamiz.",
+  "Student qaytdi! So‘zlar vahimada 😂",
+  "Yana keldingmi? Demak, lug‘atdan hali qochib qutulmabsan 😏",
+  "Bugun ham «buni bilardim-ku» degan kunmi? 😂",
+  "Xotirangga so‘z kirityapmiz, chiqib ketmasin faqat 😭",
+  "Qani, bugun kim yutadi: senmi yoki koreyscha so‘zlarmi?",
+  "So‘zlar bilan salomlash, ertaga tanimay qolma 😂",
+  "Bugun ham lug‘atni ochib, bilimdon qiyofasiga kiramizmi? 😎",
+  "Miyang band bo‘lsa, bitta so‘zga joy topib ber 😂",
+  "Oho, koreys tili bo‘yicha navbatdagi qurbon keldi 😭",
+  "Qani, bugun xotirang bilan kelishib olamiz.",
+  "Yodlagan so‘zlaringni sanab beraymi yoki o‘zimiz ham bilmaymizmi? 😂",
+  "Bugun so‘zlar seni imtihon qilsa, nima qilasan? 😏",
+  "Student, miyangni samolyot rejimidan chiqar 😂",
+  "Yana lug‘atmi? Ha, hayot shunaqa 😭",
+  "Bugun ham so‘zlarni ko‘rib, «keyinroq» demaymizmi? 😂",
+  "Xotirangga yangi so‘zlar uchun ijara shartnomasi tuzamizmi?",
+  "Qani, bugun nechta so‘z bilan do‘stlashamiz?",
+  "Koreyscha so‘zlar seni bloklab qo‘ymasin yana 😂",
+  "Lug‘at ochildi, endi qochishga kech 😎",
+  "Bugun xotirangni ishlatamiz, chang bosib qolmasin 😂",
+  "Ha, student, bugun qaysi so‘zlar bilan olishamiz?",
+  "So‘zlarni yodla, keyin ularni ko‘chada uchratganda tanib ol 😂",
+  "Koreyscha so‘zlar navbatda, sen esa hali salomlashmading 😭",
+  "Bugun miyangga nechta koreyscha mehmon taklif qilamiz?",
+  "O‘tgan safargi so‘zlar bilan aloqang uzilib qolmadimi? 😂",
+  "Xo‘sh, bugun lug‘at bilan jiddiy gaplashamizmi?",
+  "So‘zlar seni kutib charchadi, bir kirib chiq 😂",
+  "Bugun ham «esimdan chiqibdi» degan bahona tayyormi? 😏",
+  "Qani, xotirangni uyg‘ot, ish vaqti bo‘ldi 😂",
+  "Yangi so‘zlar keldi, eski so‘zlar esa seni qidiryapti 😭",
+  "Koreys tilini o‘rganamizmi yoki shunchaki kuzatamizmi? 😂",
+  "Bugun ham miyaga yangi so‘zlardan yuk tushiramiz.",
+  "So‘zlarni yodla, ular ham e’tibor kutyapti-ku 😭",
+  "KIBO’ga kirish oson, endi so‘zlarni ham eslab qol 😂",
+  "Qani, bugun xotirang bilan tortishib ko‘ramiz.",
+  "Student, bugun qaysi kitobni qiynamoqchisan? 😂",
+  "Yana uchrashdik! Endi so‘zlarni ham chaqirib olamiz.",
+  "Bugun nechta so‘zni miyangdan joy topib chiqaramiz? 😭",
+  "So‘zlar seni ko‘rib qochmasidan boshlay qol 😂",
+  "Xo‘sh, bugun koreyscha so‘zlar bilan hisob-kitob qilamizmi?",
+  "Miyangga yangi so‘zlar kerak ekan, o‘zi buyurtma beribdi 😂",
+  "Yodlashni boshlaymizmi yoki hali muzokaralar davom etadimi? 😏",
+  "Bugun xotirang biz bilan hamkorlik qilarmikan? 😂",
+  "Koreyscha so‘zlar: «Bizni yana unutib yuborma!» 😭",
+  "Qani, bugun nechta so‘zni xotirangda noqonuniy saqlaymiz?",
+  "Student, bugun ham bilimlarni yuklab olamizmi? 😂",
+  "Lug‘at seni kutyapti, uchrashuvni bekor qilma 😎",
+  "Bugun ham so‘zlarga qarab, «buni qayerda ko‘rgandim?» demaymizmi? 😂",
+  "Yana bir kun, yana xotira bilan muzokara 😭",
+  "Qani, bugun miyangga koreyscha yangilanish beramiz.",
+  "So‘zlar tayyor, student tayyormi — savol shu 😂",
+  "Bugun ham lug‘at bilan munosabatlarni tiklaymizmi?",
+  "Koreyscha so‘zlar seni tanib qoldi, endi sen ham ularni tani 😂",
+  "Qani, xotirangni tekshiramiz, vahimaga tushma 😏",
+  "Bugun nechta so‘zni «bir ko‘rgandim» darajasidan «bilaman» darajasiga olib chiqamiz?",
+  "Lug‘atga keldingmi? Demak, bugun so‘zlarning kuni 😂",
+  "Student, miyangga yangi mehmonlar uchun joy tayyorla.",
+  "Bugun ham so‘zlarni ko‘rib, ular bilan ko‘z urishtirib chiqmaymizmi? 😭",
+  "Xotirang ishlashga tayyormi yoki tanaffus hali tugamadimi? 😂",
+  "Qani, bugun so‘zlarni eslab qolish bo‘yicha rekord qo‘yamizmi?",
+  "Koreyscha so‘zlarni yodlaymiz, keyin ularni unutmaslikni ham o‘rganamiz 😂",
+  "Bugun miyangga nechta yangi fayl yuklaymiz? 😎",
+  "So‘zlar seni kutyapti, faqat gul olib kelishing shart emas 😂",
+  "Yana keldingmi? Xotirangni tekshirish vaqti bo‘libdi 😭",
+  "Qani, bugun koreyscha so‘zlar bilan tanishuvni davom ettiramiz.",
+  "Miyangga yangi so‘zlar qo‘shamiz, eski fayllarni o‘chirib yuborma 😂",
+  "Bugun ham lug‘at bilan uchrashuvga kechikmading, qoyil 😏",
+  "Xo‘sh, bugun kim ko‘proq charchaydi: senmi yoki xotirangmi? 😂",
+  "So‘zlar tayyor, bahonalar ham tayyormi? 😭",
+  "Ha, keldingmi? Qani, bugun ham so‘zlarni bir oz qiynaymiz 😂"
+ ];
+ var node=document.getElementById('kiboWelcomeGreeting');
+ if(!node||!greetings.length)return;
+ var remainingKey='kiboWelcomeGreetingRemainingV1';
+ var lastKey='kiboWelcomeGreetingLastV1';
+ function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+ function read(key){try{return localStorage.getItem(key)}catch(e){return null}}
+ function write(key,value){try{localStorage.setItem(key,value)}catch(e){}}
+ var last=read(lastKey);
+ var remaining;
+ try{remaining=JSON.parse(read(remainingKey)||'null')}catch(e){remaining=null}
+ if(!Array.isArray(remaining)||remaining.some(function(x){return typeof x!=='string'||greetings.indexOf(x)<0})||remaining.length>greetings.length){remaining=[];}
+ if(!remaining.length){remaining=shuffle(greetings.slice());if(remaining.length>1&&remaining[0]===last){var swap=1+Math.floor(Math.random()*(remaining.length-1));var temp=remaining[0];remaining[0]=remaining[swap];remaining[swap]=temp;}}
+ var next=remaining.shift();
+ if(next===last&&remaining.length){remaining.push(next);next=remaining.shift();}
+ node.textContent=next;
+ write(lastKey,next);write(remainingKey,JSON.stringify(remaining));
+})();
+</script>
 </body>
 
 <style id="book2b-holo-card-styles">
