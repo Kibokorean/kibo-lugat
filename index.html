@@ -5109,6 +5109,8 @@ body.night #kiboStatsView .kibo-leaderboard-tabs button.active{background:var(--
 @media(prefers-reduced-motion:reduce){#kiboStatsView *,#kiboStatsView *::before,#kiboStatsView *::after{transition:none!important;scroll-behavior:auto!important}}
 </style>
 
+
+
 </body>
 
 <style id="book2b-holo-card-styles">
@@ -5341,3 +5343,13 @@ body.night #kiboStudyAuthGate .kibo-study-auth-dialog,body.dark #kiboStudyAuthGa
  if(!attach()){var tries=0;var timer=setInterval(function(){tries++;if(attach()||tries>40)clearInterval(timer)},250)}
 })();
 </script>
+
+<style id="kibo-remove-review-and-empty-rank-frames">
+/* Hide the empty personal-rank banner for guests instead of leaving a blank outlined box. */
+#kiboStatsView .kibo-my-rank:empty{display:none!important;margin:0!important;padding:0!important;border:0!important;min-height:0!important;background:transparent!important;box-shadow:none!important}
+/* In the review calendar view, remove the extra large outer picker card; keep the calendar's own card. */
+body:has(#reviewCalendarPanel[style*="display: block"]) #wordSectionPicker .picker-card,
+#wordSectionPicker:has(#reviewCalendarPanel[style*="display: block"]) .picker-card{
+  border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;
+}
+</style>
