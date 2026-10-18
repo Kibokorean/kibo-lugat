@@ -1752,6 +1752,28 @@ input,select,textarea,button{max-width:100%;font:inherit}
 #kibo-cloud-auth .kibo-google-button { width: 100%; margin: 0; }
 </style>
 
+
+<style id="kibo-remove-extra-frames">
+/* Remove the extra outer card around the Google-only sign-in button. */
+#kibo-cloud-auth:not(.is-signed-in){
+  border:0!important;
+  box-shadow:none!important;
+  background:transparent!important;
+  padding:0!important;
+  border-radius:0!important;
+}
+/* Statistics: keep the leaderboard content, remove decorative outer frames. */
+#wordSectionPicker:has(#kiboStatsView[style*="display: block"]) .picker-card{
+  border:0!important;
+  box-shadow:none!important;
+  background:transparent!important;
+}
+#kiboStatsView{
+  border:0!important;
+  box-shadow:none!important;
+}
+body.night #kiboStatsView{border:0!important;box-shadow:none!important}
+</style>
 </head>
 <body>
 <aside aria-label="Asosiy menyu" id="kiboSideNav">
