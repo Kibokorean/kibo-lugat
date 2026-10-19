@@ -1791,208 +1791,39 @@ body.night .kibo-flashcard-home,body.dark .kibo-flashcard-home{background:var(--
 </style>
 
 <style id="kibo-personal-flashcard-study-large">
-/* Kattalashtirilgan shaxsiy flashcard yodlash rejimi */
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-flashcard-dialog{
-  width:min(1480px,96vw); max-height:96vh; padding:28px;
-}
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-layout{
-  grid-template-columns:minmax(220px,.62fr) minmax(0,1.8fr); gap:22px; align-items:stretch;
-}
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-editor{
-  padding:22px; min-width:0;
-}
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-study{
-  width:100%; box-sizing:border-box; margin-top:0; padding:28px 30px 26px; border-radius:22px;
-}
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-flip{
-  display:flex; align-items:center; justify-content:center; width:100%; min-height:clamp(300px,42vh,430px);
-  padding:36px; border-radius:24px; font-size:clamp(34px,4.8vw,64px); line-height:1.25; font-weight:850;
-  box-shadow:0 18px 42px rgba(25,45,80,.12); white-space:normal;
-}
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-progress{font-size:15px;line-height:1.5;margin-bottom:14px}
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcStudyActions,
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcJudgeActions{gap:12px;margin-top:20px}
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcStudyActions button,
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcJudgeActions button{min-height:52px;padding:14px 22px;font-size:16px}
+/* Personal flashcards use the same card geometry and flip animation as the native vocabulary mode. */
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-flashcard-dialog{width:min(1480px,96vw);max-height:96vh;padding:28px}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-layout{grid-template-columns:minmax(220px,.62fr) minmax(0,1.8fr);gap:22px;align-items:stretch}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-editor{padding:22px;min-width:0}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-study{width:100%;box-sizing:border-box;margin-top:0;padding:24px 28px 26px;border-radius:22px;text-align:center;background:var(--panel2,#f8fbff)}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-progress{font-size:13px;line-height:1.5;margin:0 0 12px;color:var(--muted)}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcStudyStage{font-size:15px;margin-bottom:12px}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcFlip{display:block;position:relative;width:100%;max-width:760px;min-height:415px;margin:34px auto 23px;padding:0;border:0;border-radius:30px;perspective:1400px;background:transparent;color:var(--text,#122039);font-size:inherit;font-weight:inherit;box-shadow:none;overflow:visible;white-space:normal;text-align:center}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-personal-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;border:1px solid rgba(91,142,212,.28);border-radius:30px;background:linear-gradient(145deg,#fff,#f2f7ff);color:var(--text,#122039);backface-visibility:hidden;-webkit-backface-visibility:hidden;transform-style:preserve-3d;transition:transform .48s ease;box-shadow:0 25px 55px rgba(36,79,135,.16);overflow-wrap:anywhere}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-personal-front{transform:rotateY(0)}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-personal-back{transform:rotateY(180deg)}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcFlip.flipped .kibo-fc-personal-front{transform:rotateY(-180deg)}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcFlip.flipped .kibo-fc-personal-back{transform:rotateY(0)}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-term{display:block;max-width:100%;font-family:"Noto Sans KR","Noto Sans",Arial,sans-serif;font-size:72px;line-height:1.15;font-weight:800;letter-spacing:-2.2px;overflow-wrap:anywhere;word-break:keep-all}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcStudyHint{margin:-20px 0 12px;font-size:13px}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcStudyActions{display:flex;justify-content:center;gap:11px;margin-top:12px;flex-wrap:wrap}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcStudyActions button,#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcJudgeActions button{min-height:57px;padding:14px 22px;border-radius:16px;font-size:15px;font-weight:900}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcPrev,#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcNext{min-width:150px}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcJudgeActions{gap:11px;margin-top:17px;justify-content:center}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcJudgeActions button{flex:1;max-width:230px}
+body.night #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-personal-face,body.dark #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-personal-face{background:linear-gradient(145deg,#132641,#0d1b2d);color:var(--text,#f2f6ff);box-shadow:0 25px 55px rgba(0,0,0,.28)}
 @media(max-width:700px){
-  #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-flashcard-dialog{width:100%;max-height:96vh;padding:12px}
-  #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-layout{grid-template-columns:minmax(0,1fr);gap:12px}
-  #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-deck-list{order:2}
-  #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-editor{padding:12px}
-  #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-study{padding:14px}
-  #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-flip{min-height:clamp(240px,38vh,340px);padding:20px;font-size:clamp(30px,8vw,46px)}
-  #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcStudyActions button,
-  #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcJudgeActions button{flex:1;min-width:calc(50% - 12px);font-size:14px;padding:12px}
-}
-
-/* Shaxsiy flashcard matnlarini asosiy lug‘at kartasidagi ko‘rinishga moslash */
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-flip{
-  flex-direction:column; gap:18px; text-align:center;
-  background:linear-gradient(145deg,#fff,#f2f7ff); color:var(--text,#14213d);
-  font-family:"Noto Sans KR","Noto Sans",Arial,sans-serif;
-  letter-spacing:-.025em; line-height:1.15;
-}
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-term{
-  display:block; max-width:100%; font-family:"Noto Sans KR","Noto Sans",Arial,sans-serif;
-  font-size:clamp(48px,6vw,76px); line-height:1.18; font-weight:800;
-  letter-spacing:-.035em; overflow-wrap:anywhere; word-break:keep-all;
-}
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-definition{
-  display:flex; flex-direction:column; align-items:center; gap:5px;
-  max-width:min(560px,100%); padding:12px 18px; border:1px solid var(--line,#d6e2f4);
-  border-radius:14px; background:rgba(110,145,190,.08); font-size:14px; line-height:1.55;
-  font-weight:400; letter-spacing:0; overflow-wrap:anywhere;
-}
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-definition b{
-  color:#3988f7; font-size:10px; letter-spacing:.7px;
-}
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-definition span{
-  color:var(--text,#14213d); font-size:clamp(14px,1.5vw,17px); font-weight:500;
-}
-body.night #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-flip,
-body.dark #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-flip{
-  background:linear-gradient(145deg,#132641,#0d1b2d); color:var(--text,#f2f6ff);
-}
-@media(max-width:700px){
- #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-term{font-size:clamp(38px,10vw,56px)}
- #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-definition{padding:10px 12px}
-}
-</style>
-<style id="kibo-personal-flashcard-main-book-format-fix">
-/* Shaxsiy flashcard yodlashini asosiy lug‘atdagi katta kartochka ko‘rinishiga tenglashtirish */
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) {
-  padding: 2vh 2vw !important;
-}
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-flashcard-dialog {
-  width: min(1600px, 96vw) !important;
-  max-width: 1600px !important;
-  max-height: 96vh !important;
-  padding: clamp(18px, 2vw, 30px) !important;
-  overflow-y: auto !important;
-}
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-layout {
-  grid-template-columns: minmax(210px, .34fr) minmax(0, 1.66fr) !important;
-  gap: clamp(14px, 1.5vw, 24px) !important;
-  align-items: stretch !important;
-}
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcMainPanel {
-  min-width: 0 !important;
-  padding: clamp(16px, 2vw, 30px) !important;
-}
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcStudyPanel {
-  display: block !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
-  min-width: 0 !important;
-  margin: 0 !important;
-  padding: clamp(18px, 2.4vw, 36px) !important;
-  border-radius: 24px !important;
-}
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcFlip {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 100% !important;
-  min-height: clamp(340px, 49vh, 520px) !important;
-  box-sizing: border-box !important;
-  padding: clamp(24px, 4vw, 52px) !important;
-  border: 1px solid var(--line, #d6e2f4) !important;
-  border-radius: 26px !important;
-  background: linear-gradient(145deg, #ffffff, #f2f7ff) !important;
-  color: var(--text, #14213d) !important;
-  box-shadow: 0 20px 48px rgba(25,45,80,.13) !important;
-  font-family: "Noto Sans KR", "Noto Sans", Arial, sans-serif !important;
-  font-size: clamp(40px, 5vw, 72px) !important;
-  font-weight: 800 !important;
-  line-height: 1.2 !important;
-  letter-spacing: -.025em !important;
-  text-align: center !important;
-  white-space: normal !important;
-  overflow-wrap: anywhere !important;
-}
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcFlip .kibo-fc-term {
-  display: block !important;
-  max-width: 100% !important;
-  font-family: "Noto Sans KR", "Noto Sans", Arial, sans-serif !important;
-  font-size: clamp(56px, 6.2vw, 88px) !important;
-  font-weight: 850 !important;
-  line-height: 1.2 !important;
-  letter-spacing: -.035em !important;
-  overflow-wrap: anywhere !important;
-  word-break: keep-all !important;
-}
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcFlip .kibo-fc-definition {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  gap: 5px !important;
-  max-width: min(600px, 100%) !important;
-  margin-top: 8px !important;
-  padding: 12px 20px !important;
-  border: 1px solid var(--line, #d6e2f4) !important;
-  border-radius: 14px !important;
-  background: rgba(110,145,190,.08) !important;
-  font-size: 14px !important;
-  font-weight: 400 !important;
-  line-height: 1.55 !important;
-  letter-spacing: 0 !important;
-  overflow-wrap: anywhere !important;
-}
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcFlip .kibo-fc-definition b {
-  color: #3988f7 !important;
-  font-size: 10px !important;
-  letter-spacing: .7px !important;
-}
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcFlip .kibo-fc-definition span {
-  color: var(--text, #14213d) !important;
-  font-size: clamp(15px, 1.5vw, 18px) !important;
-  font-weight: 500 !important;
-}
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcStudyStage,
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcStudyProgress,
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcStudyHint {
-  font-size: 15px !important;
-  line-height: 1.5 !important;
-}
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcStudyActions,
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcJudgeActions {
-  display: flex !important;
-  justify-content: center !important;
-  flex-wrap: wrap !important;
-  gap: 12px !important;
-  margin-top: 20px !important;
-}
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcStudyActions button,
-#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcJudgeActions button {
-  min-height: 54px !important;
-  padding: 14px 24px !important;
-  font-size: 16px !important;
-}
-body.night #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcFlip,
-body.dark #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcFlip {
-  background: linear-gradient(145deg, #132641, #0d1b2d) !important;
-  color: var(--text, #f2f6ff) !important;
-}
-body.night #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcFlip .kibo-fc-definition span,
-body.dark #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcFlip .kibo-fc-definition span {
-  color: var(--text, #f2f6ff) !important;
-}
-@media (max-width: 700px) {
-  #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) { padding: 6px !important; }
-  #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-flashcard-dialog {
-    width: 100% !important; max-height: 98vh !important; padding: 10px !important; border-radius: 16px !important;
-  }
-  #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-layout { grid-template-columns: minmax(0,1fr) !important; gap: 10px !important; }
-  #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-deck-list { order: 2 !important; padding: 10px !important; }
-  #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcMainPanel { padding: 10px !important; }
-  #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcStudyPanel { padding: 12px !important; border-radius: 16px !important; }
-  #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcFlip {
-    min-height: clamp(260px, 43vh, 380px) !important; padding: 18px !important; border-radius: 18px !important;
-  }
-  #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcFlip .kibo-fc-term { font-size: clamp(40px, 10vw, 60px) !important; }
-  #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcStudyActions button,
-  #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcJudgeActions button { flex: 1 1 42% !important; min-width: 0 !important; padding: 12px 10px !important; font-size: 14px !important; }
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-flashcard-dialog{width:100%;max-height:96vh;padding:12px}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-layout{grid-template-columns:minmax(0,1fr);gap:12px}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-deck-list{order:2}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-editor{padding:12px}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-study{padding:14px}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcFlip{min-height:clamp(280px,52vh,415px);margin:22px auto 20px}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-term{font-size:clamp(42px,10vw,61px);letter-spacing:-1.5px}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-personal-face{padding:20px;border-radius:24px}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcStudyActions{gap:8px}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcStudyActions button,#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcJudgeActions button{flex:1;min-width:calc(50% - 8px);min-height:52px;font-size:14px;padding:12px}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcStudyHint{margin:-14px 0 10px}
 }
 </style>
 </head>
@@ -5503,10 +5334,13 @@ body.night #kiboStatsView .kibo-leaderboard-tabs button.active{background:var(--
   if(!studyCards.length)return;
   const c=studyCards[studyIndex];
   $('kiboFcStudyProgress').textContent=(studyIndex+1)+' / '+studyCards.length;
-  // Asosiy lug‘at kartochkasidagi kabi: koreyscha so‘z katta, tarjima esa kichik ma’no blokida ko‘rinadi.
-  $('kiboFcFlip').innerHTML='<span class="kibo-fc-term">'+escapeHtml(c.front||'')+'</span>'+(revealed?'<span class="kibo-fc-definition"><b>뜻</b><span>'+escapeHtml(c.back||'')+'</span></span>':'');
+  const front=escapeHtml(c.front||'');
+  const back=escapeHtml(c.back||'');
+  $('kiboFcFlip').classList.toggle('flipped',!!revealed);
+  $('kiboFcFlip').innerHTML='<span class="kibo-fc-personal-face kibo-fc-personal-front"><span class="kibo-fc-term">'+front+'</span></span>'+
+    '<span class="kibo-fc-personal-face kibo-fc-personal-back"><span class="kibo-fc-term">'+back+'</span></span>';
   $('kiboFcStudyStage').textContent=studyMode==='learn'?'1-bosqich · Yodlash':('2-bosqich · Tekshirish'+(studyRound>1?' · '+studyRound+'-urinish':''));
-  $('kiboFcStudyHint').textContent=studyMode==='learn'?'Kartochkani bosib javobini ko‘ring. Barcha kartochkalarni ko‘rgach, tekshirish bosqichiga o‘ting.':(revealed?'Javobni tekshiring: bilsangiz “Yodladim”, bilmasangiz “Qayta o‘rganish”ni bosing.':'Avval javobni ko‘ring, so‘ng o‘zingizni tekshiring.');
+  $('kiboFcStudyHint').textContent=studyMode==='learn'?'Kartochkani bosing yoki Enter/Space tugmasini bosing — o‘zbekcha ma’nosi chiqadi. Bu bosqichda baholash yo‘q.':(revealed?'Javobni tekshiring: bilsangiz “Yodladim”, bilmasangiz “Qayta o‘rganish”ni bosing.':'Kartochkani bosing yoki “Javobni ko‘rish” tugmasini bosing.');
   $('kiboFcPrev').hidden=studyMode!=='learn';
   $('kiboFcReveal').hidden=studyMode==='learn'||revealed;
   $('kiboFcNext').hidden=studyMode!=='learn';
@@ -5546,7 +5380,7 @@ body.night #kiboStatsView .kibo-leaderboard-tabs button.active{background:var(--
   }
  }
  $('kiboFcStartStudy').addEventListener('click',startStudy);
- $('kiboFcFlip').addEventListener('click',()=>{if(studyMode==='learn'){revealed=!revealed;renderStudy()}else if(studyMode==='test'&&revealed){revealed=false;renderStudy()}});
+ $('kiboFcFlip').addEventListener('click',()=>{if(!studyCards.length)return;revealed=!revealed;renderStudy()});
  $('kiboFcReveal').addEventListener('click',()=>{revealed=true;renderStudy()});
  $('kiboFcPrev').addEventListener('click',()=>{if(studyMode==='learn'&&studyIndex>0){studyIndex--;revealed=false;renderStudy()}});
  $('kiboFcNext').addEventListener('click',()=>{if(studyMode!=='learn')return;if(studyIndex<studyCards.length-1){studyIndex++;revealed=false;renderStudy()}else{startTest(studyCards)}});
