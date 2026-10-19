@@ -5353,6 +5353,8 @@ body.night #kiboStatsView .kibo-leaderboard-tabs button.active{background:var(--
       frame.srcdoc=html;
     });list.appendChild(row);
    }
+   // To‘plam bosilganda yagona bo‘limni avtomatik ochib, darhol yodlashni boshlash.
+   if(totalSections===1){const onlySection=list.querySelector('button');if(onlySection)onlySection.click();}
    const close=modal.querySelector('#kiboFcStudyClose');close.onclick=()=>{modal.remove();document.body.style.overflow=''};
   }catch(e){console.error(e);status('Yodlash oynasini ochib bo‘lmadi: '+(e.message||e));}
  }
