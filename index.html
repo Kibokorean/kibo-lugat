@@ -1824,6 +1824,39 @@ body.night .kibo-flashcard-home,body.dark .kibo-flashcard-home{background:var(--
   #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcStudyActions button,
   #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcJudgeActions button{flex:1;min-width:calc(50% - 12px);font-size:14px;padding:12px}
 }
+
+/* Shaxsiy flashcard matnlarini asosiy lug‘at kartasidagi ko‘rinishga moslash */
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-flip{
+  flex-direction:column; gap:18px; text-align:center;
+  background:linear-gradient(145deg,#fff,#f2f7ff); color:var(--text,#14213d);
+  font-family:"Noto Sans KR","Noto Sans",Arial,sans-serif;
+  letter-spacing:-.025em; line-height:1.15;
+}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-term{
+  display:block; max-width:100%; font-family:"Noto Sans KR","Noto Sans",Arial,sans-serif;
+  font-size:clamp(48px,6vw,76px); line-height:1.18; font-weight:800;
+  letter-spacing:-.035em; overflow-wrap:anywhere; word-break:keep-all;
+}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-definition{
+  display:flex; flex-direction:column; align-items:center; gap:5px;
+  max-width:min(560px,100%); padding:12px 18px; border:1px solid var(--line,#d6e2f4);
+  border-radius:14px; background:rgba(110,145,190,.08); font-size:14px; line-height:1.55;
+  font-weight:400; letter-spacing:0; overflow-wrap:anywhere;
+}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-definition b{
+  color:#3988f7; font-size:10px; letter-spacing:.7px;
+}
+#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-definition span{
+  color:var(--text,#14213d); font-size:clamp(14px,1.5vw,17px); font-weight:500;
+}
+body.night #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-flip,
+body.dark #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-flip{
+  background:linear-gradient(145deg,#132641,#0d1b2d); color:var(--text,#f2f6ff);
+}
+@media(max-width:700px){
+ #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-term{font-size:clamp(38px,10vw,56px)}
+ #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-definition{padding:10px 12px}
+}
 </style>
 </head>
 <body>
@@ -5333,7 +5366,8 @@ body.night #kiboStatsView .kibo-leaderboard-tabs button.active{background:var(--
   if(!studyCards.length)return;
   const c=studyCards[studyIndex];
   $('kiboFcStudyProgress').textContent=(studyIndex+1)+' / '+studyCards.length;
-  $('kiboFcFlip').textContent=revealed?(c.back||''):c.front;
+  // Asosiy lug‘at kartochkasidagi kabi: koreyscha so‘z katta, tarjima esa kichik ma’no blokida ko‘rinadi.
+  $('kiboFcFlip').innerHTML='<span class="kibo-fc-term">'+escapeHtml(c.front||'')+'</span>'+(revealed?'<span class="kibo-fc-definition"><b>뜻</b><span>'+escapeHtml(c.back||'')+'</span></span>':'');
   $('kiboFcStudyStage').textContent=studyMode==='learn'?'1-bosqich · Yodlash':('2-bosqich · Tekshirish'+(studyRound>1?' · '+studyRound+'-urinish':''));
   $('kiboFcStudyHint').textContent=studyMode==='learn'?'Kartochkani bosib javobini ko‘ring. Barcha kartochkalarni ko‘rgach, tekshirish bosqichiga o‘ting.':(revealed?'Javobni tekshiring: bilsangiz “Yodladim”, bilmasangiz “Qayta o‘rganish”ni bosing.':'Avval javobni ko‘ring, so‘ng o‘zingizni tekshiring.');
   $('kiboFcPrev').hidden=studyMode!=='learn';
