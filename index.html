@@ -5697,12 +5697,14 @@ body.night #kiboTelegramGate .kibo-tg-dialog,body.dark #kiboTelegramGate .kibo-t
 </style>
 <div id="kiboTelegramGate" hidden role="dialog" aria-modal="true" aria-labelledby="kiboTelegramGateTitle">
  <div class="kibo-tg-dialog">
-  <div class="kibo-tg-icon" aria-hidden="true">➤</div>
-  <h2 id="kiboTelegramGateTitle">Telegram orqali tasdiqlash</h2>
-  <p id="kiboTelegramGateDescription">Lug‘atni ochish uchun botda Start bosing, so‘ng @kibo_korean kanaliga a’zo ekaningiz tekshiriladi. Telefon raqami so‘ralmaydi.</p>
-  <a class="kibo-tg-primary" id="kiboTelegramStartButton" href="https://t.me/Koreystilida_bot" target="_blank" rel="noopener noreferrer">✈ Telegram orqali tasdiqlash</a>
-  <a class="kibo-tg-secondary" href="https://t.me/kibo_korean" target="_blank" rel="noopener noreferrer">Kanalga a’zo bo‘lish</a>
-  <button type="button" class="kibo-tg-secondary" id="kiboTelegramCheckButton">A’zolikni qayta tekshirish</button>
+  <div class="kibo-tg-icon" aria-hidden="true">🔑</div>
+  <h2 id="kiboTelegramGateTitle">Kodni kiritish</h2>
+  <p id="kiboTelegramGateDescription">So‘z yodlashni boshlash uchun Telegram botidan olgan kodingizni kiriting. Har bir kod faqat bitta foydalanuvchi uchun ishlaydi.</p>
+  <form id="kiboAccessCodeForm" autocomplete="off">
+   <input id="kiboAccessCodeInput" name="accessCode" type="text" maxlength="32" placeholder="Masalan: KIBO-ABCDE-FG123" autocapitalize="characters" spellcheck="false" required style="box-sizing:border-box;width:100%;min-height:48px;padding:12px 14px;border:1px solid var(--line,#d6e2f4);border-radius:14px;background:var(--panel,#fff);color:var(--text,#17243b);font:inherit;text-align:center;text-transform:uppercase;letter-spacing:.06em">
+   <button type="submit" class="kibo-tg-primary" id="kiboAccessCodeSubmit">Kodni tekshirish</button>
+  </form>
+  <a class="kibo-tg-secondary" id="kiboGetAccessCodeButton" href="https://t.me/Koreystilida_bot" target="_blank" rel="noopener noreferrer">✈ Kodni olish — Telegram bot</a>
   <p class="kibo-tg-status" id="kiboTelegramGateStatus" role="status" aria-live="polite"></p>
   <button type="button" class="kibo-tg-secondary" id="kiboTelegramGateCancel">Hozir emas</button>
  </div>
@@ -5711,34 +5713,18 @@ body.night #kiboTelegramGate .kibo-tg-dialog,body.dark #kiboTelegramGate .kibo-t
 (function(){
  'use strict';
  var modal=document.getElementById('kiboTelegramGate'),statusEl=document.getElementById('kiboTelegramGateStatus');
- var pending=null,checking=false,sessionId=null,pollTimer=null;
- var SESSION_STORE='kiboTelegramPendingV1';
- function saveState(){try{sessionStorage.setItem(SESSION_STORE,JSON.stringify({sessionId:sessionId,pending:pending}));}catch(e){}}
- function restoreState(){try{var x=JSON.parse(sessionStorage.getItem(SESSION_STORE)||'null');if(x&&x.sessionId&&x.pending){sessionId=x.sessionId;pending=x.pending;return true;}}catch(e){}return false;}
+ var pending=null,checking=false;
  var selectors=['selectWordSection','selectSsokSection','selectSsokMidSection','selectSsokAdvancedSection','selectTopik30DaysSection','selectBook1ASection','selectBook1BSection','selectBook2ASection','selectBook2BSection','selectBook3ASection','selectBook3BSection'];
  function setStatus(message,error){if(statusEl){statusEl.textContent=message||'';statusEl.style.color=error?'#d83d58':'var(--muted,#71809a)';}}
  function getUser(){try{return window.firebase&&firebase.apps&&firebase.apps.length?firebase.auth().currentUser:null}catch(e){return null}}
- function closeGate(){if(modal)modal.hidden=true;if(pollTimer){clearTimeout(pollTimer);pollTimer=null;}}
- function openGate(name,args){pending={name:name,args:Array.prototype.slice.call(args||[])};saveState();if(modal)modal.hidden=false;setStatus('');startSession();}
- async function api(action,extra){var user=getUser();if(!user)throw new Error('Avval Google orqali hisobingizga kiring.');var token=await user.getIdToken();var r=await fetch('/api/telegram-session',{method:'POST',headers:{'Content-Type':'application/json','Cache-Control':'no-store'},body:JSON.stringify(Object.assign({action:action,idToken:token,sessionId:sessionId,pending:pending},extra||{}))});var d=await r.json().catch(function(){return {}});if(!r.ok||!d.ok)throw new Error(d.error||'Tekshirish amalga oshmadi. Qayta urinib ko‘ring.');return d;}
- async function startSession(){if(!modal||modal.hidden)return;var user=getUser();if(!user){setStatus('Avval Google orqali hisobingizga kiring.',true);return;}try{setStatus('Tasdiqlash sessiyasi yaratilmoqda…');var d=await api('create',{sessionId:null});sessionId=d.sessionId;saveState();var link='https://t.me/Koreystilida_bot?start='+encodeURIComponent(d.startToken);document.getElementById('kiboTelegramStartButton').href=link;setStatus('Telegram botini oching va Start tugmasini bosing. So‘ng shu oynaga qayting.');pollStatus();}catch(e){setStatus(e.message||'Tasdiqlashni boshlash imkoni bo‘lmadi.',true);}}
- async function pollStatus(manual){if(checking)return;checking=true;try{var d=await api('status',{checkMembership:!!manual});if(d.status==='approved'&&d.subscribed){setStatus('Tasdiqlandi! Lug‘at ochilmoqda.');if(!pending&&d.pending)pending=d.pending;resumePending();return;}if(d.status==='not_subscribed'){setStatus('Bot orqali tasdiqlandi, ammo @kibo_korean kanaliga a’zo emassiz. A’zo bo‘lib, qayta tekshiring.',true);}else if(d.status==='waiting'){setStatus('Botda Start bosishingizni kutyapmiz…');}else if(d.status==='expired'){setStatus('Tasdiqlash muddati tugadi. Tugmani qayta bosib yangi sessiya yarating.',true);sessionId=null;document.getElementById('kiboTelegramStartButton').href='https://t.me/Koreystilida_bot';}}
- catch(e){setStatus(e.message||'Server bilan bog‘lanib bo‘lmadi.',true);}finally{checking=false;if(sessionId&&!modal.hidden)pollTimer=setTimeout(function(){pollStatus(false)},2500);}}
- function resumePending(){if(!pending)return;var task=pending;pending=null;sessionId=null;try{sessionStorage.removeItem(SESSION_STORE);}catch(e){}closeGate();var fn=window[task.name];if(typeof fn==='function')setTimeout(function(){fn.apply(window,task.args)},0);}
- selectors.forEach(function(name){var original=window[name];if(typeof original!=='function'||original.__kiboTelegramGateWrapped)return;var wrapped=function(){openGate(name,arguments);};wrapped.__kiboTelegramGateWrapped=true;window[name]=wrapped;});
- var originalStartDeck=window.startDeckStudy;if(typeof originalStartDeck==='function'&&!originalStartDeck.__kiboTelegramGateWrapped){var wrappedDeck=function(){openGate('startDeckStudy',arguments);};wrappedDeck.__kiboTelegramGateWrapped=true;window.startDeckStudy=wrappedDeck;}
- document.getElementById('kiboTelegramStartButton')?.addEventListener('click',function(e){if(!sessionId){e.preventDefault();startSession();}});
- document.getElementById('kiboTelegramCheckButton')?.addEventListener('click',function(){if(!sessionId){startSession();return;}pollStatus(true);});
- document.getElementById('kiboTelegramGateCancel')?.addEventListener('click',function(){pending=null;sessionId=null;try{sessionStorage.removeItem(SESSION_STORE);}catch(e){}closeGate();});
- if(new URLSearchParams(window.location.search).has('telegram_return')){
-  var returnParams=new URLSearchParams(window.location.search);
-  var restored=restoreState();
-  var returnSession=returnParams.get('tg_session');
-  if(returnSession&&/^[A-Za-z0-9_-]{30,50}$/.test(returnSession))sessionId=returnSession;
-  if((restored||sessionId)&&modal){modal.hidden=false;setStatus('Saytga qaytdingiz. Server tasdiqlashni tekshirmoqda…');pollStatus(true);}
-  else if(modal){modal.hidden=false;setStatus('Tasdiqlash sessiyasi topilmadi. Saytda Telegram orqali tasdiqlashni qaytadan boshlang.',true);}
-  try{var u=new URL(window.location.href);u.searchParams.delete('telegram_return');u.searchParams.delete('tg_session');history.replaceState({},'',u.pathname+u.search+u.hash);}catch(e){}
- }
+ function closeGate(){if(modal)modal.hidden=true;}
+ async function api(action,code){var user=getUser();if(!user)throw new Error('Avval Google orqali hisobingizga kiring.');var token=await user.getIdToken();var r=await fetch('/api/access-code',{method:'POST',headers:{'Content-Type':'application/json','Cache-Control':'no-store'},body:JSON.stringify({action:action,idToken:token,code:code||''})});var d=await r.json().catch(function(){return {}});if(!r.ok||!d.ok)throw new Error(d.error||'So‘rov bajarilmadi. Qayta urinib ko‘ring.');return d;}
+ function resumePending(){if(!pending)return;var task=pending;pending=null;closeGate();var fn=window[task.name];if(typeof fn==='function')setTimeout(function(){fn.apply(window,task.args)},0);}
+ async function openGate(name,args){pending={name:name,args:Array.prototype.slice.call(args||[])};modal.hidden=false;setStatus('Kodingiz tekshirilmoqda…');if(checking)return;checking=true;try{var d=await api('status');if(d.hasAccess){setStatus('Kirish tasdiqlangan.');resumePending();return;}setStatus('So‘z yodlash uchun Telegram botidan olgan kodingizni kiriting.');}catch(e){setStatus(e.message||'Server bilan bog‘lanib bo‘lmadi.',true);}finally{checking=false;}}
+ selectors.forEach(function(name){var original=window[name];if(typeof original!=='function'||original.__kiboAccessCodeWrapped)return;var wrapped=function(){openGate(name,arguments);};wrapped.__kiboAccessCodeWrapped=true;window[name]=wrapped;});
+ var originalStartDeck=window.startDeckStudy;if(typeof originalStartDeck==='function'&&!originalStartDeck.__kiboAccessCodeWrapped){var wrappedDeck=function(){openGate('startDeckStudy',arguments);};wrappedDeck.__kiboAccessCodeWrapped=true;window.startDeckStudy=wrappedDeck;}
+ document.getElementById('kiboAccessCodeForm')?.addEventListener('submit',async function(e){e.preventDefault();if(checking)return;var input=document.getElementById('kiboAccessCodeInput'),button=document.getElementById('kiboAccessCodeSubmit'),code=(input.value||'').trim().toUpperCase();if(!code){setStatus('Kodni kiriting.',true);return;}checking=true;button.disabled=true;button.textContent='Tekshirilmoqda…';try{var d=await api('redeem',code);if(d.hasAccess){setStatus('Kod qabul qilindi! So‘z yodlash ochildi.');resumePending();}}catch(err){setStatus(err.message||'Kod tekshirilmadi.',true);}finally{checking=false;button.disabled=false;button.textContent='Kodni tekshirish';}});
+ document.getElementById('kiboTelegramGateCancel')?.addEventListener('click',function(){pending=null;closeGate();});
  modal?.addEventListener('click',function(e){if(e.target===modal){pending=null;closeGate();}});
  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&modal&&!modal.hidden){pending=null;closeGate();}});
 })();
