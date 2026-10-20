@@ -36,7 +36,13 @@ module.exports = async function handler(req,res) {
    const user=await firebaseUser(body.idToken);
    if(!user||user.disabled)return send(res,401,{ok:false,error:'Avval Google orqali hisobingizga kiring.'});
    const sessionId=randomToken(24), startToken=randomToken(32);
-   const session={uid:user.uid,createdAt:Date.now(),status:'waiting',telegramId:null};
+   const pending=body.pending&&typeof body.pending==='object'?body.pending:null;
+   const allowed=['selectWordSection','selectSsokSection','selectSsokMidSection','selectSsokAdvancedSection','selectTopik30DaysSection','selectBook1ASection','selectBook1BSection','selectBook2ASection','selectBook2BSection','selectBook3ASection','selectBook3BSection','startDeckStudy'];
+   let safePending=null;
+   if(pending&&allowed.includes(pending.name)&&Array.isArray(pending.args)){
+    try{const serialized=JSON.stringify(pending.args);if(serialized.length<=20000)safePending={name:pending.name,args:JSON.parse(serialized)};}catch{}
+   }
+   const session={uid:user.uid,createdAt:Date.now(),status:'waiting',telegramId:null,pending:safePending};
    await put(`kibo:tg:session:${sessionId}`,session);
    await put(`kibo:tg:start:${startToken}`,{sessionId},TTL);
    return send(res,200,{ok:true,sessionId,startToken,expiresIn:TTL});
@@ -63,7 +69,7 @@ module.exports = async function handler(req,res) {
      const prior=await get(usedKey);
      if(!prior || prior.uid!==user.uid) return send(res,409,{ok:false,error:'Bu tasdiqlash boshqa hisobda ishlatilgan. Yangi sessiya boshlang.'});
     }
-    return send(res,200,{ok:true,status:'approved',subscribed:true});
+    return send(res,200,{ok:true,status:'approved',subscribed:true,pending:session.pending||null});
    }
    return send(res,200,{ok:true,status:session.status==='not_subscribed'?'not_subscribed':'waiting',subscribed:false});
   }

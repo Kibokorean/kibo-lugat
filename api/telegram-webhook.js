@@ -40,8 +40,8 @@ module.exports=async function handler(req,res){
       catch(e){session.subscribed=false;session.status='not_subscribed';session.membershipError=true;}
       await put(key,session,Math.max(1,600-Math.floor((Date.now()-session.createdAt)/1000)));
       await redis('DEL',startKey);
-      if(session.subscribed)await reply(msg.chat.id,'Telegram hisobingiz tasdiqlandi va @kibo_korean kanaliga a’zoligingiz aniqlandi. Quyidagi tugma orqali saytga qayting. Saytda tasdiqlash avtomatik yakunlanadi.',[[{text:'🌐 Saytga qaytish',url:'https://www.kibo.uz/?telegram_return=1'}]]);
-      else await reply(msg.chat.id,'Telegram hisobingiz tasdiqlandi, ammo @kibo_korean kanaliga a’zolik topilmadi. Kanalga a’zo bo‘ling, so‘ng saytdagi “A’zolikni qayta tekshirish” tugmasini bosing.',[[{text:'📢 Kanalga a’zo bo‘lish',url:'https://t.me/kibo_korean'},{text:'🌐 Saytga qaytish',url:'https://www.kibo.uz/?telegram_return=1'}]]);
+      if(session.subscribed)await reply(msg.chat.id,'Telegram hisobingiz tasdiqlandi va @kibo_korean kanaliga a’zoligingiz aniqlandi. Quyidagi tugma orqali saytga qayting. Saytda tasdiqlash avtomatik yakunlanadi.',[[{text:'🌐 Saytga qaytish',url:'https://www.kibo.uz/?telegram_return=1&tg_session='+encodeURIComponent(mapped.sessionId)}]]);
+      else await reply(msg.chat.id,'Telegram hisobingiz tasdiqlandi, ammo @kibo_korean kanaliga a’zolik topilmadi. Kanalga a’zo bo‘ling, so‘ng saytdagi “A’zolikni qayta tekshirish” tugmasini bosing.',[[{text:'📢 Kanalga a’zo bo‘lish',url:'https://t.me/kibo_korean'},{text:'🌐 Saytga qaytish',url:'https://www.kibo.uz/?telegram_return=1&tg_session='+encodeURIComponent(mapped.sessionId)}]]);
      }
     }
    } else if(/^\/start(?:@\w+)?\s*$/.test(msg.text)) await reply(msg.chat.id,'KIBO KOREAN saytidagi “Telegram orqali tasdiqlash” tugmasi orqali boshlang. Telefon raqami kerak emas.');
