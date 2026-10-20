@@ -5713,17 +5713,27 @@ body.night #kiboTelegramGate .kibo-tg-dialog,body.dark #kiboTelegramGate .kibo-t
 (function(){
  'use strict';
  var modal=document.getElementById('kiboTelegramGate'),statusEl=document.getElementById('kiboTelegramGateStatus');
- var pending=null,checking=false,originalFunctions=Object.create(null);
+ var pending=null,checking=false,accessGranted=false,originalFunctions=Object.create(null);
  var selectors=['selectWordSection','selectSsokSection','selectSsokMidSection','selectSsokAdvancedSection','selectTopik30DaysSection','selectBook1ASection','selectBook1BSection','selectBook2ASection','selectBook2BSection','selectBook3ASection','selectBook3BSection'];
  function setStatus(message,error){if(statusEl){statusEl.textContent=message||'';statusEl.style.color=error?'#d83d58':'var(--muted,#71809a)';}}
  function getUser(){try{return window.firebase&&firebase.apps&&firebase.apps.length?firebase.auth().currentUser:null}catch(e){return null}}
  function closeGate(){if(modal)modal.hidden=true;}
  async function api(action,code){var user=getUser();if(!user)throw new Error('Avval Google orqali hisobingizga kiring.');var token=await user.getIdToken();var r=await fetch('/api/access-code',{method:'POST',headers:{'Content-Type':'application/json','Cache-Control':'no-store'},body:JSON.stringify({action:action,idToken:token,code:code||''})});var d=await r.json().catch(function(){return {}});if(!r.ok||!d.ok)throw new Error(d.error||'So‘rov bajarilmadi. Qayta urinib ko‘ring.');return d;}
- function resumePending(){if(!pending)return;var task=pending;pending=null;closeGate();var fn=originalFunctions[task.name];if(typeof fn==='function')setTimeout(function(){fn.apply(window,task.args)},0);}
- async function openGate(name,args){pending={name:name,args:Array.prototype.slice.call(args||[])};modal.hidden=false;setStatus('Kodingiz tekshirilmoqda…');if(checking)return;checking=true;try{var d=await api('status');if(d.hasAccess){setStatus('Kirish tasdiqlangan.');resumePending();return;}setStatus('So‘z yodlash uchun Telegram botidan olgan kodingizni kiriting.');}catch(e){setStatus(e.message||'Server bilan bog‘lanib bo‘lmadi.',true);}finally{checking=false;}}
- selectors.forEach(function(name){var original=window[name];if(typeof original!=='function'||original.__kiboAccessCodeWrapped)return;originalFunctions[name]=original;var wrapped=function(){openGate(name,arguments);};wrapped.__kiboAccessCodeWrapped=true;window[name]=wrapped;});
- var originalStartDeck=window.startDeckStudy;if(typeof originalStartDeck==='function'&&!originalStartDeck.__kiboAccessCodeWrapped){originalFunctions.startDeckStudy=originalStartDeck;var wrappedDeck=function(){openGate('startDeckStudy',arguments);};wrappedDeck.__kiboAccessCodeWrapped=true;window.startDeckStudy=wrappedDeck;}
- document.getElementById('kiboAccessCodeForm')?.addEventListener('submit',async function(e){e.preventDefault();if(checking)return;var input=document.getElementById('kiboAccessCodeInput'),button=document.getElementById('kiboAccessCodeSubmit'),code=(input.value||'').trim().toUpperCase();if(!code){setStatus('Kodni kiriting.',true);return;}checking=true;button.disabled=true;button.textContent='Tekshirilmoqda…';try{var d=await api('redeem',code);if(d.hasAccess){setStatus('Kod qabul qilindi! So‘z yodlash ochildi.');resumePending();}}catch(err){setStatus(err.message||'Kod tekshirilmadi.',true);}finally{checking=false;button.disabled=false;button.textContent='Kodni tekshirish';}});
+ function runOriginal(name,args){var fn=originalFunctions[name];if(typeof fn==='function')return fn.apply(window,args||[]);}
+ function resumePending(){if(!pending)return;var task=pending;pending=null;closeGate();setTimeout(function(){runOriginal(task.name,task.args)},0);}
+ async function openGate(name,args){
+  var callArgs=Array.prototype.slice.call(args||[]);
+  /* A verified access grant is kept for this page session. This prevents nested
+     section selectors from re-running the status check in a loop. */
+  if(accessGranted){runOriginal(name,callArgs);return;}
+  pending={name:name,args:callArgs};if(modal)modal.hidden=false;setStatus('Kodingiz tekshirilmoqda…');if(checking)return;checking=true;
+  try{var d=await api('status');if(d.hasAccess){accessGranted=true;setStatus('Kirish tasdiqlandi.');resumePending();return;}setStatus('So‘z yodlash uchun Telegram botidan olgan kodingizni kiriting.');}
+  catch(e){setStatus(e.message||'Server bilan bog‘lanib bo‘lmadi.',true);}
+  finally{checking=false;}
+ }
+ selectors.forEach(function(name){var original=window[name];if(typeof original!=='function'||original.__kiboAccessCodeWrapped)return;originalFunctions[name]=original;var wrapped=function(){return openGate(name,arguments);};wrapped.__kiboAccessCodeWrapped=true;window[name]=wrapped;});
+ var originalStartDeck=window.startDeckStudy;if(typeof originalStartDeck==='function'&&!originalStartDeck.__kiboAccessCodeWrapped){originalFunctions.startDeckStudy=originalStartDeck;var wrappedDeck=function(){return openGate('startDeckStudy',arguments);};wrappedDeck.__kiboAccessCodeWrapped=true;window.startDeckStudy=wrappedDeck;}
+ document.getElementById('kiboAccessCodeForm')?.addEventListener('submit',async function(e){e.preventDefault();if(checking)return;var input=document.getElementById('kiboAccessCodeInput'),button=document.getElementById('kiboAccessCodeSubmit'),code=(input.value||'').trim().toUpperCase();if(!code){setStatus('Kodni kiriting.',true);return;}checking=true;button.disabled=true;button.textContent='Tekshirilmoqda…';try{var d=await api('redeem',code);if(d.hasAccess){accessGranted=true;setStatus('Kod qabul qilindi! So‘z yodlash ochildi.');resumePending();}}catch(err){setStatus(err.message||'Kod tekshirilmadi.',true);}finally{checking=false;button.disabled=false;button.textContent='Kodni tekshirish';}});
  document.getElementById('kiboTelegramGateCancel')?.addEventListener('click',function(){pending=null;closeGate();});
  modal?.addEventListener('click',function(e){if(e.target===modal){pending=null;closeGate();}});
  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&modal&&!modal.hidden){pending=null;closeGate();}});
