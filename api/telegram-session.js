@@ -55,10 +55,14 @@ module.exports = async function handler(req,res) {
     session.subscribed=subscribed;session.status=subscribed?'approved':'not_subscribed';await put(key,session,Math.max(1,TTL-Math.floor((Date.now()-session.createdAt)/1000)));
    }
    if(subscribed) {
-    // One-time consumption is atomic: only one successful poll can claim the approval.
-    const claimed=await redis('SET',`kibo:tg:used:${body.sessionId}`,'1','EX',TTL,'NX');
-    if(claimed!=='OK')return send(res,409,{ok:false,error:'Bu tasdiqlash allaqachon ishlatilgan. Yangi sessiya boshlang.'});
-    await redis('DEL',key);
+    // Idempotent approval: preserve the UID-bound result briefly so a background-tab
+    // poll or a lost HTTP response cannot consume approval before the page resumes.
+    const usedKey=`kibo:tg:used:${body.sessionId}`;
+    const claimed=await redis('SET',usedKey,JSON.stringify({uid:user.uid,approvedAt:Date.now()}),'EX',TTL,'NX');
+    if(claimed!=='OK') {
+     const prior=await get(usedKey);
+     if(!prior || prior.uid!==user.uid) return send(res,409,{ok:false,error:'Bu tasdiqlash boshqa hisobda ishlatilgan. Yangi sessiya boshlang.'});
+    }
     return send(res,200,{ok:true,status:'approved',subscribed:true});
    }
    return send(res,200,{ok:true,status:session.status==='not_subscribed'?'not_subscribed':'waiting',subscribed:false});
