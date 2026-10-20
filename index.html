@@ -5475,7 +5475,29 @@ function renderStudyWord(){const w=studyWords[studyIndex];$('kiboAssignmentStudy
 function updateCount(){}
 function start(list,lesson,roundNo=1){activeLesson=lesson;queue=[...list];wrong=[];index=0;round=roundNo;$('kiboAssignmentBookCard').hidden=true;$('kiboAssignmentStudy').hidden=true;$('kiboAssignmentResult').hidden=true;$('kiboAssignmentQuiz').hidden=false;showQuestion()}
 function showQuestion(){if(index>=queue.length){finishRound();return}const w=queue[index];$('kiboAssignmentProgress').textContent=`KIBO KOREAN 1 · ${activeLesson}-mavzu · ${index+1}/${queue.length} · ${round}-urinish`;$('kiboAssignmentPrompt').textContent=w.uz;$('kiboAssignmentAnswer').value='';$('kiboAssignmentFeedback').textContent='';$('kiboAssignmentAnswer').focus()}
-function registerWords(list){if(typeof window.kiboRegisterLearnedWord!=='function'){return}list.forEach(w=>window.kiboRegisterLearnedWord({ko:w.ko,uz:w.uz,ex:'',reviewSourceId:'kibo-korean-1-lesson-'+activeLesson,bookName:'KIBO KOREAN 1',sectionTitle:'KIBO KOREAN 1 · '+activeLesson+'-mavzu'},-1));document.dispatchEvent(new CustomEvent('kibo:review-updated'))}
+function registerWords(list){
+ const sourceId='kibo-korean-1-lesson-'+activeLesson;
+ const title='KIBO KOREAN 1 · '+activeLesson+'-mavzu';
+ const prepared=list.filter(w=>w&&w.ko&&w.uz).map(w=>({ko:String(w.ko),uz:String(w.uz),ex:'',reviewSourceId:sourceId,bookName:'KIBO KOREAN 1',sectionTitle:title,sourceTitle:title}));
+ // Use the same shared spaced-repetition registrar as the main vocabulary system.
+ if(typeof window.kiboRegisterLearnedWord==='function'){
+   prepared.forEach(w=>window.kiboRegisterLearnedWord(w,-1));
+ }else{
+   // Safe fallback: write compatible entries into the same review store, keeping each lesson distinct.
+   try{
+     const storeKey='kibo_spaced_review_v1';
+     const data=JSON.parse(localStorage.getItem(storeKey)||'{}');
+     const day=86400000,now=Date.now();
+     prepared.forEach(w=>{
+       const key=JSON.stringify([sourceId,w.ko,w.uz]);
+       if(!data[key])data[key]={step:0,last:now,due:(()=>{const d=new Date(now);d.setHours(0,0,0,0);return d.getTime()+day})(),ko:w.ko,uz:w.uz,section:-1,sectionTitle:title,reviewSourceId:sourceId,bookName:'KIBO KOREAN 1'};
+     });
+     localStorage.setItem(storeKey,JSON.stringify(data));
+   }catch(e){console.error('KIBO KOREAN 1: so‘zlarni takrorlash tizimiga qo‘shib bo‘lmadi',e);setStatus('Mavzu tugadi, lekin so‘zlarni takrorlash tizimiga saqlab bo‘lmadi. Xotira sozlamalarini tekshiring.',true);return;}
+ }
+ if(typeof window.kiboUpdateHomeDueWords==='function')window.kiboUpdateHomeDueWords();
+ document.dispatchEvent(new CustomEvent('kibo:review-updated'));
+}
 function finishRound(){const total=queue.length,correct=total-wrong.length,pct=total?Math.round(correct/total*100):100;$('kiboAssignmentQuiz').hidden=true;$('kiboAssignmentResult').hidden=false;if(pct>=90||wrong.length===0){saveCompleted(activeLesson);renderLessons();registerWords(words.filter(w=>w.lesson===activeLesson));$('kiboAssignmentResultTitle').textContent='🎉 Vazifa bajarildi!';$('kiboAssignmentResultText').textContent=`Natija: ${correct}/${total} (${pct}%). KIBO KOREAN 1 · ${activeLesson}-mavzu so‘zlari takrorlash tizimiga qo‘shildi.`;$('kiboAssignmentRetry').hidden=true;}else{$('kiboAssignmentResultTitle').textContent='Yana bir urinish kerak';$('kiboAssignmentResultText').textContent=`Natija: ${correct}/${total} (${pct}%). 90% talab bajarilmadi. Endi faqat ${wrong.length} ta xato so‘z qayta so‘raladi.`;$('kiboAssignmentRetry').hidden=false;$('kiboAssignmentRetry').textContent='Xato '+wrong.length+' ta so‘zni qayta ishlash';window.kiboAssignmentWrong=[...wrong];}}
 $('kiboAssignmentBookTile')?.addEventListener('click',()=>document.getElementById('kiboAssignmentLessons')?.scrollIntoView({behavior:'smooth',block:'start'}));
 $('kiboAssignmentReveal')?.addEventListener('click',()=>{$('kiboAssignmentStudyUz').hidden=false;$('kiboAssignmentReveal').hidden=true});
