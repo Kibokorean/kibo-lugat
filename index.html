@@ -5623,6 +5623,34 @@ if(window.firebase&&firebase.auth&&firebase.firestore&&firebase.apps&&firebase.a
 }
 </style>
 
+
+<style id="kibo-assignment-progress-panel-contrast-fix">
+/* Fix: progress card must not look dimmed in day mode. Use the active theme tokens, never translucent dark fills. */
+#kiboAssignmentsView .kibo-assignment-study-sidebar{
+  opacity:1!important;filter:none!important;backdrop-filter:none!important;
+  color:var(--text,#17243b)!important;
+  background:var(--panel,#fff)!important;
+  border:1px solid var(--line,#d7e2f1)!important;
+  box-shadow:0 8px 24px rgba(24,50,88,.07)!important;
+}
+#kiboAssignmentsView .kibo-assignment-side-title strong,
+#kiboAssignmentsView .kibo-assignment-side-ring>div:last-child>strong{color:var(--text,#17243b)!important}
+#kiboAssignmentsView .kibo-assignment-side-title small,
+#kiboAssignmentsView .kibo-assignment-side-ring>div:last-child>small,
+#kiboAssignmentsView .kibo-assignment-side-note{color:var(--muted,#71809a)!important}
+#kiboAssignmentsView .kibo-assignment-side-ring{
+  background:var(--panel2,#f5f8fd)!important;
+  border-color:var(--line,#d7e2f1)!important;
+}
+#kiboAssignmentsView .kibo-assignment-ring{
+  background:conic-gradient(#3387ff 0deg,#dce6f3 0deg 360deg)!important;
+}
+#kiboAssignmentsView .kibo-assignment-ring:before{background:var(--panel,#fff)!important}
+body.night #kiboAssignmentsView .kibo-assignment-ring,
+body.dark #kiboAssignmentsView .kibo-assignment-ring{background:conic-gradient(#3387ff 0deg,#25364f 0deg 360deg)!important}
+body.night #kiboAssignmentsView .kibo-assignment-ring:before,
+body.dark #kiboAssignmentsView .kibo-assignment-ring:before{background:var(--panel,#101d30)!important}
+</style>
 </body>
 
 <style id="book2b-holo-card-styles">
