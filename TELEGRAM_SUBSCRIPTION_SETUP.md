@@ -40,7 +40,7 @@ Telegram `{"ok":true,"result":true}` qaytarganini tekshiring. Tekshirish uchun `
 3. “Telegram orqali tasdiqlash” botni `start` parametri bilan ochadi. Foydalanuvchi botda Start bosadi.
 4. Webhook `X-Telegram-Bot-Api-Secret-Token` ni tekshiradi, start tokenni bir martalik iste’mol qiladi va `message.from.id` ni sessiyaga server tomonida bog‘laydi.
 5. Server `getChatMember` bilan kanalni tekshiradi. A’zo bo‘lmasa, kanalga a’zo bo‘lib saytdagi “A’zolikni qayta tekshirish” tugmasini bosish kerak.
-6. Tasdiqlash faqat shu Firebase UID uchun amal qiladi. Natija qisqa muddat idempotent saqlanadi, shuning uchun qaytish havolasi ochilganda sahifa yangilansa ham tasdiq yo‘qolmaydi; sessiya 10 daqiqada tugaydi va boshqa hisob foydalana olmaydi.
+6. Muvaffaqiyatli sessiya bir marta iste’mol qilinadi. Sessiya 10 daqiqada tugaydi.
 
 ## API yo‘llari
 
@@ -57,4 +57,3 @@ Telegram `{"ok":true,"result":true}` qaytarganini tekshiring. Tekshirish uchun `
 - Vercel Function logs’da tokenlar yoki Telegram ID yozilmasligini tekshiring.
 
 Eslatma: deploy qilish va haqiqiy Telegram bot/webhook/Redis environment’lari ushbu manba arxivining ichidan bajarilmaydi. Vercel va BotFather sozlamalarini yuqoridagi amallar bilan bajarish zarur.
-\n\n## Saytga qaytish tugmasi va tiklash\n\nBot kanal a’zoligi tasdiqlansa, `https://www.kibo.uz/?telegram_return=1` manzilli **Saytga qaytish** inline tugmasini yuboradi. Sayt dastlabki lug‘at amali va sessiya ID sini `sessionStorage` da vaqtincha saqlaydi. Qaytish manzili ochilganda sessiya serverda qayta tekshiriladi; faqat `approved` natijasi qaytsa dastlabki lug‘at amali davom etadi. `telegram_return` parametri URL dan olib tashlanadi.\n

@@ -36,13 +36,7 @@ module.exports = async function handler(req,res) {
    const user=await firebaseUser(body.idToken);
    if(!user||user.disabled)return send(res,401,{ok:false,error:'Avval Google orqali hisobingizga kiring.'});
    const sessionId=randomToken(24), startToken=randomToken(32);
-   const pending=body.pending&&typeof body.pending==='object'?body.pending:null;
-   const allowed=['selectWordSection','selectSsokSection','selectSsokMidSection','selectSsokAdvancedSection','selectTopik30DaysSection','selectBook1ASection','selectBook1BSection','selectBook2ASection','selectBook2BSection','selectBook3ASection','selectBook3BSection','startDeckStudy'];
-   let safePending=null;
-   if(pending&&allowed.includes(pending.name)&&Array.isArray(pending.args)){
-    try{const serialized=JSON.stringify(pending.args);if(serialized.length<=20000)safePending={name:pending.name,args:JSON.parse(serialized)};}catch{}
-   }
-   const session={uid:user.uid,createdAt:Date.now(),status:'waiting',telegramId:null,pending:safePending};
+   const session={uid:user.uid,createdAt:Date.now(),status:'waiting',telegramId:null};
    await put(`kibo:tg:session:${sessionId}`,session);
    await put(`kibo:tg:start:${startToken}`,{sessionId},TTL);
    return send(res,200,{ok:true,sessionId,startToken,expiresIn:TTL});
@@ -51,9 +45,22 @@ module.exports = async function handler(req,res) {
    const user=await firebaseUser(body.idToken);
    if(!user||user.disabled)return send(res,401,{ok:false,error:'Google hisobingiz muddati tugagan. Qayta kiring.'});
    if(typeof body.sessionId!=='string'||!/^[A-Za-z0-9_-]{30,50}$/.test(body.sessionId))return send(res,400,{ok:false,error:'Tasdiqlash sessiyasi noto‘g‘ri. Qaytadan boshlang.'});
-   const key=`kibo:tg:session:${body.sessionId}`, session=await get(key);
-   if(!session||Date.now()-session.createdAt>TTL*1000)return send(res,410,{ok:false,status:'expired',error:'Tasdiqlash sessiyasi tugagan. Qaytadan boshlang.'});
+   const key=`kibo:tg:session:${body.sessionId}`;
+   const usedKey=`kibo:tg:used:${body.sessionId}`;
+   const session=await get(key);
+   // A successful approval may be received by another poll before the browser handles it.
+   // Keep approval idempotent so a lost response or parallel tab cannot turn it into 410.
+   if(!session){
+    const prior=await get(usedKey);
+    if(prior&&prior.uid===user.uid)return send(res,200,{ok:true,status:'approved',subscribed:true});
+    return send(res,200,{ok:true,status:'expired',subscribed:false,error:'Tasdiqlash sessiyasi tugagan. Qaytadan boshlang.'});
+   }
    if(session.uid!==user.uid)return send(res,403,{ok:false,error:'Bu tasdiqlash sessiyasi boshqa hisobga tegishli.'});
+   if(Date.now()-session.createdAt>TTL*1000){
+    const prior=await get(usedKey);
+    if(prior&&prior.uid===user.uid)return send(res,200,{ok:true,status:'approved',subscribed:true});
+    return send(res,200,{ok:true,status:'expired',subscribed:false,error:'Tasdiqlash sessiyasi tugagan. Qaytadan boshlang.'});
+   }
    if(!session.telegramId)return send(res,200,{ok:true,status:'waiting',subscribed:false});
    let subscribed=session.subscribed===true;
    if(body.checkMembership===true) {
@@ -61,14 +68,14 @@ module.exports = async function handler(req,res) {
     session.subscribed=subscribed;session.status=subscribed?'approved':'not_subscribed';await put(key,session,Math.max(1,TTL-Math.floor((Date.now()-session.createdAt)/1000)));
    }
    if(subscribed) {
-    // Idempotent approval: preserve the UID-bound result briefly so a background-tab
-    // poll or a lost HTTP response cannot consume approval before the page resumes.
-    const usedKey=`kibo:tg:used:${body.sessionId}`;
+    // Store who owns the approval and preserve it for repeated polls until TTL expires.
     const claimed=await redis('SET',usedKey,JSON.stringify({uid:user.uid,approvedAt:Date.now()}),'EX',TTL,'NX');
-    if(claimed!=='OK') {
+    if(claimed!=='OK'){
      const prior=await get(usedKey);
-     if(!prior || prior.uid!==user.uid) return send(res,409,{ok:false,error:'Bu tasdiqlash boshqa hisobda ishlatilgan. Yangi sessiya boshlang.'});
+     if(!prior||prior.uid!==user.uid)return send(res,409,{ok:false,error:'Bu tasdiqlash boshqa hisobda ishlatilgan. Yangi sessiya boshlang.'});
     }
+    session.subscribed=true; session.status='approved';
+    await put(key,session,Math.max(1,TTL-Math.floor((Date.now()-session.createdAt)/1000)));
     return send(res,200,{ok:true,status:'approved',subscribed:true,pending:session.pending||null});
    }
    return send(res,200,{ok:true,status:session.status==='not_subscribed'?'not_subscribed':'waiting',subscribed:false});
