@@ -5679,3 +5679,45 @@ body:has(#reviewCalendarPanel[style*="display: block"]) #wordSectionPicker .pick
   border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;
 }
 </style>
+
+
+<style id="kibo-telegram-subscription-gate-style">
+#kiboTelegramGate[hidden]{display:none!important}#kiboTelegramGate{position:fixed;inset:0;z-index:100010;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(5,15,30,.72);backdrop-filter:blur(7px)}#kiboTelegramGate .kibo-tg-dialog{width:min(100%,470px);padding:26px;border:1px solid var(--line,#d6e2f4);border-radius:24px;background:var(--panel,#fff);color:var(--text,#17243b);box-shadow:0 24px 80px rgba(0,0,0,.3);text-align:center}#kiboTelegramGate .kibo-tg-icon{width:62px;height:62px;margin:0 auto 14px;display:grid;place-items:center;border-radius:19px;background:#229ed9;color:#fff;font-size:29px}#kiboTelegramGate h2{margin:0 0 10px;font-size:24px;line-height:1.2}#kiboTelegramGate p{margin:0 0 16px;color:var(--muted,#71809a);line-height:1.6;font-size:14px}#kiboTelegramGate .kibo-tg-primary{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:48px;margin:10px 0;border:0;border-radius:12px;background:#229ed9;color:#fff;font-weight:850;font-size:15px;text-decoration:none;cursor:pointer}#kiboTelegramGate .kibo-tg-secondary{width:100%;min-height:46px;margin-top:4px;border:1px solid var(--line,#d6e2f4);border-radius:12px;background:var(--panel2,#f7faff);color:var(--text,#17243b);font-weight:850;cursor:pointer}#kiboTelegramGate .kibo-tg-status{min-height:20px;margin:12px 0 0;font-size:13px;line-height:1.5}#kiboTelegramGate .kibo-tg-widget{display:flex;justify-content:center;min-height:42px;margin:10px 0}body.night #kiboTelegramGate .kibo-tg-dialog,body.dark #kiboTelegramGate .kibo-tg-dialog{background:var(--panel,#101d30);border-color:var(--line,#263b57)}
+</style>
+<div id="kiboTelegramGate" hidden role="dialog" aria-modal="true" aria-labelledby="kiboTelegramGateTitle">
+ <div class="kibo-tg-dialog">
+  <div class="kibo-tg-icon" aria-hidden="true">➤</div>
+  <h2 id="kiboTelegramGateTitle">Telegram kanaliga obuna bo‘ling</h2>
+  <p id="kiboTelegramGateDescription">KIBO KOREAN’da so‘z yodlash uchun avval @kibo_korean kanaliga obuna bo‘ling va Telegram hisobingizni tasdiqlang.</p>
+  <a class="kibo-tg-primary" href="https://t.me/kibo_korean" target="_blank" rel="noopener noreferrer">✈ Telegram kanaliga obuna bo‘lish</a>
+  <p>Telegram hisobingizni bog‘lash:</p>
+  <div class="kibo-tg-widget" id="kiboTelegramLoginWidget"></div>
+  <button type="button" class="kibo-tg-secondary" id="kiboTelegramCheckButton">Obunani tekshirish</button>
+  <p class="kibo-tg-status" id="kiboTelegramGateStatus" role="status" aria-live="polite"></p>
+  <button type="button" class="kibo-tg-secondary" id="kiboTelegramGateCancel">Hozir emas</button>
+ </div>
+</div>
+<script id="kibo-telegram-subscription-gate">
+(function(){
+ 'use strict';
+ var modal=document.getElementById('kiboTelegramGate');
+ var statusEl=document.getElementById('kiboTelegramGateStatus');
+ var pending=null, checking=false, widgetReady=false;
+ var selectors=['selectWordSection','selectSsokSection','selectSsokMidSection','selectSsokAdvancedSection','selectTopik30DaysSection','selectBook1ASection','selectBook1BSection','selectBook2ASection','selectBook2BSection','selectBook3ASection','selectBook3BSection'];
+ function setStatus(message,error){if(statusEl){statusEl.textContent=message||'';statusEl.style.color=error?'#d83d58':'var(--muted,#71809a)';}}
+ function openGate(name,args){pending={name:name,args:Array.prototype.slice.call(args||[])};if(modal)modal.hidden=false;setStatus('');renderTelegramWidget();}
+ function closeGate(){if(modal)modal.hidden=true;}
+ function getUser(){try{return window.firebase&&firebase.apps&&firebase.apps.length?firebase.auth().currentUser:null}catch(e){return null}}
+ function telegramData(){try{return JSON.parse(localStorage.getItem('kiboTelegramAuthDataV1')||'null')}catch(e){return null}}
+ function renderTelegramWidget(){var holder=document.getElementById('kiboTelegramLoginWidget');if(!holder||widgetReady)return;widgetReady=true;var script=document.createElement('script');script.async=true;script.src='https://telegram.org/js/telegram-widget.js?22';script.setAttribute('data-telegram-login','Koreystilida_bot');script.setAttribute('data-size','large');script.setAttribute('data-userpic','false');script.setAttribute('data-request-access','write');script.setAttribute('data-onauth','onKiboTelegramAuth(user)');holder.appendChild(script);}
+ async function checkSubscription(){if(checking)return false;checking=true;var user=getUser();if(!user){checking=false;setStatus('Avval Google orqali hisobingizga kiring.',true);return false;}var tg=telegramData();if(!tg){checking=false;setStatus('Telegram hisobingizni yuqoridagi tugma orqali ulang.',true);return false;}setStatus('Obuna tekshirilmoqda…');try{var token=await user.getIdToken(true);var response=await fetch('/api/telegram-subscription',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idToken:token,telegram:tg})});var result=await response.json();if(result.needsTelegramLogin){localStorage.removeItem('kiboTelegramAuthDataV1');setStatus('Telegram hisobini qayta tasdiqlang.',true);checking=false;return false;}if(!response.ok||!result.ok){setStatus(result.error||'Tekshirish amalga oshmadi. Keyinroq qayta urinib ko‘ring.',true);checking=false;return false;}if(!result.subscribed){setStatus('Siz @kibo_korean kanaliga obuna emassiz. Obuna bo‘lib, qayta tekshiring.',true);checking=false;return false;}setStatus('Obuna tasdiqlandi. Yodlash ochilmoqda.');return true;}catch(e){console.error('KIBO Telegram subscription check:',e);setStatus('Server bilan bog‘lanib bo‘lmadi. Internetni tekshirib qayta urinib ko‘ring.',true);return false;}finally{checking=false;}}
+ window.onKiboTelegramAuth=async function(data){try{localStorage.setItem('kiboTelegramAuthDataV1',JSON.stringify(data));setStatus('Telegram hisobingiz tekshirilmoqda…');var ok=await checkSubscription();if(ok)resumePending();}catch(e){setStatus('Telegram hisobini saqlab bo‘lmadi.',true);}};
+ function resumePending(){if(!pending)return;var task=pending;pending=null;closeGate();var fn=window[task.name];if(typeof fn==='function')setTimeout(function(){fn.apply(window,task.args)},0);}
+ selectors.forEach(function(name){var original=window[name];if(typeof original!=='function'||original.__kiboTelegramGateWrapped)return;var wrapped=function(){openGate(name,arguments);checkSubscription().then(function(ok){if(ok)resumePending()});};wrapped.__kiboTelegramGateWrapped=true;window[name]=wrapped;});
+ // Personal flashcard deck study is also a vocabulary-learning entry point.
+ var originalStartDeck=window.startDeckStudy;if(typeof originalStartDeck==='function'&&!originalStartDeck.__kiboTelegramGateWrapped){var wrappedDeck=function(){var args=arguments;openGate('startDeckStudy',args);checkSubscription().then(function(ok){if(ok)resumePending()});};wrappedDeck.__kiboTelegramGateWrapped=true;window.startDeckStudy=wrappedDeck;}
+ var checkButton=document.getElementById('kiboTelegramCheckButton');if(checkButton)checkButton.addEventListener('click',async function(){var ok=await checkSubscription();if(ok)resumePending();});
+ document.getElementById('kiboTelegramGateCancel')?.addEventListener('click',function(){pending=null;closeGate()});modal?.addEventListener('click',function(e){if(e.target===modal){pending=null;closeGate()}});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&modal&&!modal.hidden){pending=null;closeGate()}});
+})();
+</script>
+
