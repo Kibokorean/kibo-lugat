@@ -1,3 +1,0 @@
-KIBO KOREAN TOPIK TEST — TEXT QUESTIONS
-
-Savollar endi PDF iframe sifatida emas, har bir savol uchun alohida matn ko‘rinishida chiqariladi. Savol matnlari foydalanuvchi taqdim etgan 35th TOPIK II PDF fayllaridan matn ajratish orqali olindi. Ayrim rasm/jadvalga asoslangan Reading savollarining grafik mazmuni PDF’dan matn sifatida ajralmagani sababli uydirma bilan to‘ldirilmadi. Listening audiosi alohida audio player orqali beriladi; audio har bir savolga vaqt oralig‘i bo‘yicha avtomatik bog‘lanmagan. Javob kalitlari foydalanuvchi taqdim etgan answer sheet’dan olingan. Natijalar localStorage’da saqlanadi.
