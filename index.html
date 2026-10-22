@@ -1833,7 +1833,6 @@ body.night #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-p
 <div class="side-logo"><img class="side-mark" src="favicon.ico" alt="KIBO" /><span>KIBO KOREAN<small style="display:block;color:var(--muted);font-size:10px;font-weight:600;margin-top:3px">SO‘Z YODLASH</small></span></div>
 <button class="nav-link active" data-nav="home"><span class="nav-icon">⌂</span>Bosh sahifa</button>
 <button class="nav-link" data-nav="sections"><span class="nav-icon">▦</span>Bo‘limlar</button>
-<button class="nav-link" data-nav="stats"><span class="nav-icon">▥</span>Statistika</button>
 <button class="nav-link" data-nav="review"><span class="nav-icon">↻</span>Takrorlash</button>
 
 <button class="nav-link" data-nav="settings"><span class="nav-icon">⚙</span>Sozlamalar</button>
@@ -1843,7 +1842,6 @@ body.night #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-p
 <nav aria-label="Mobil menyu" id="kiboMobileNav">
 <button class="nav-link active" data-nav="home"><span class="nav-icon">⌂</span>Bosh sahifa</button>
 <button class="nav-link" data-nav="sections"><span class="nav-icon">▦</span>Bo‘limlar</button>
-<button class="nav-link" data-nav="stats"><span class="nav-icon">▥</span>Statistika</button>
 <button class="nav-link" data-nav="review"><span class="nav-icon">↻</span>Takrorlash</button>
 
 <button class="nav-link" data-nav="settings"><span class="nav-icon">⚙</span>Sozlamalar</button>
@@ -1851,13 +1849,6 @@ body.night #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-p
 </nav>
 <div class="word-section-picker" id="wordSectionPicker">
 <div class="picker-card">
-<section aria-label="Top o‘quvchilar" id="kiboStatsView" style="display:none;text-align:left;padding:22px 8px">
-<div class="kibo-stats-heading"><div class="picker-brand">KIBO KOREAN</div><h1>Eng ko‘p so‘z yodlagan foydalanuvchilar</h1><p>O‘quvchilar reytingi va shaxsiy o‘rningiz</p></div>
-<div class="kibo-leaderboard-tabs" role="group" aria-label="Reyting davri"><button type="button" class="active" data-kibo-rank="week">Hafta bo‘yicha</button><button type="button" data-kibo-rank="all">Butun muddat</button></div>
-<div class="kibo-my-rank" id="kiboMyRank" aria-live="polite">Reyting yuklanmoqda…</div>
-<div class="kibo-leaderboard" id="kiboLeaderboard"><div class="kibo-leaderboard-empty">Reyting yuklanmoqda…</div></div>
-
-</section>
 <section aria-label="Sozlamalar" id="kiboSettingsView" style="display:none;text-align:center;padding:28px 8px">
 <h1>Sozlamalar</h1>
 
@@ -2913,19 +2904,16 @@ function showPickerView(view){
   const home=document.getElementById('kiboHomeSummary');
   const sections=document.getElementById('kiboSectionsView');
   const settings=document.getElementById('kiboSettingsView');
-  const stats=document.getElementById('kiboStatsView');
   const review=document.getElementById('reviewHub');
   const calendar=document.getElementById('reviewCalendarPanel');
   const teacher=document.getElementById('kiboTeacherView');
   if(home)home.style.display=view==='home'?'block':'none';
   if(settings)settings.style.display=view==='settings'?'block':'none';
-  if(stats)stats.style.display=view==='stats'?'block':'none';
   if(sections)sections.style.display=view==='sections'?'block':'none';
   if(review)review.style.display=view==='review'?'block':'none';
   if(calendar)calendar.style.display=view==='review'?'block':'none';
   if(teacher)teacher.style.display=view==='teacher'?'block':'none';
   document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===view));
-  if(view==='stats'&&typeof window.kiboRefreshLeaderboard==='function'){setTimeout(()=>window.kiboRefreshLeaderboard(),0);}
   if(view==='sections'){const grid=document.getElementById('sectionGrid');if(grid)grid.style.display='none';const toggle=document.getElementById('wordCategoryToggle');if(toggle)toggle.setAttribute('aria-expanded','false');const arrow=document.getElementById('wordCategoryArrow');if(arrow)arrow.textContent='⌄';renderSectionPicker();}
   const st=document.getElementById('settingsThemeToggle'); if(st)st.textContent=document.body.classList.contains('night')?'🌙 Night Mode':'☀️ Day Mode';
   updateHomeMasteredCount();
@@ -2933,7 +2921,7 @@ function showPickerView(view){
 }
 document.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()=>{
   const view=b.dataset.nav;
-  if(view==='home'||view==='sections'||view==='review'||view==='settings'||view==='stats'||view==='teacher'){
+  if(view==='home'||view==='sections'||view==='review'||view==='settings'||view==='teacher'){
     const sectionView=document.getElementById('kiboSectionsView');
     if(sectionView){sectionView.classList.remove('kibo-category-page-open');Array.from(sectionView.children).forEach(el=>{el.classList.remove('kibo-current-category','kibo-current-grid');if(el.id==='sectionGrid'||/SectionGrid$/.test(el.id))el.style.display='none';else if(el.tagName==='BUTTON')el.style.display='flex';});}
     document.getElementById('wordApp').style.display='none';
@@ -4997,7 +4985,7 @@ body.night .kibo-stat-card,body.night .kibo-stats-panel,body.night .kibo-stats-r
      counts.forEach((count,i)=>{const cell=document.createElement('div');cell.className='kibo-week-day';const value=document.createElement('span');value.className='kibo-week-value';value.textContent=String(count);const wrap=document.createElement('div');wrap.className='kibo-week-bar-wrap';const fill=document.createElement('div');fill.className='kibo-week-bar';fill.style.height=(count?Math.max(8,count/max*100):3)+'%';wrap.appendChild(fill);const label=document.createElement('span');label.className='kibo-week-label';const d=new Date(today-(6-i)*DAY);label.textContent=days[(d.getDay()+6)%7];cell.append(value,wrap,label);bars.appendChild(cell)});
    }
  }
- document.addEventListener('click',function(e){const nav=e.target.closest('[data-nav="stats"]');if(nav)setTimeout(render,0)});
+
  document.addEventListener('kibo:review-updated',render);
  window.addEventListener('storage',function(e){if(!e.key||e.key===REVIEW_STORE||e.key===SECTION_STORE)render()});
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',render);else render();
@@ -5088,17 +5076,11 @@ body.night .kibo-profile-editor,body.night .kibo-leader-row{background:var(--pan
  async function saveProfile(){if(!currentUser||!db){setProfileStatus('Avval hisobingizga kiring.',true);return}const name=$('kiboProfileName').value.trim();if(!name){setProfileStatus('Profil nomini kiriting.',true);return}const btn=$('kiboSaveProfile');btn.disabled=true;try{await db.collection('users').doc(currentUser.uid).set({profileName:name,profileImage:profileImageData||null,profileUpdatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});await publishScore();leaderboardCacheByKey.clear();preview(name,profileImageData);setProfileStatus('Profil muvaffaqiyatli saqlandi.')}catch(e){console.error(e);setProfileStatus('Saqlash amalga oshmadi: ' +(e.code||e.message||'xatolik'),true)}finally{btn.disabled=false}}
  async function publishScore(){if(!currentUser||!db)return;const snap=await db.collection('users').doc(currentUser.uid).get(),d=snap.exists?snap.data():{},progress=d.progress&&typeof d.progress==='object'?d.progress:{},local=localProgress();const review=progress[REVIEW_KEY]&&typeof progress[REVIEW_KEY]==='object'?progress[REVIEW_KEY]:{};const combined={...review,...local};const c=counts(combined);await db.collection('leaderboard').doc(currentUser.uid).set({uid:currentUser.uid,displayName:d.profileName||currentUser.displayName||currentUser.email?.split('@')[0]||'KIBO o‘quvchisi',photoURL:d.profileImage||null,allCount:c.all,weekCount:c.week,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true})}
  function renderLeaderboard(){const list=$('kiboLeaderboard'),my=$('kiboMyRank');if(!list||!my)return;const key=period==='week'?'weekCount':'allCount';const sorted=leaderCache.slice().sort((a,b)=>(Number(b[key])||0)-(Number(a[key])||0)||String(a.displayName||'').localeCompare(String(b.displayName||'')));list.innerHTML='';if(!sorted.length){list.innerHTML='<div class="kibo-leaderboard-empty">Hozircha reyting uchun ma’lumot yo‘q. So‘z yodlab, hisobingizni sinxronlang.</div>';my.textContent='Reytingda hali ma’lumot yo‘q.';return}const mine=sorted.findIndex(x=>currentUser&&x.uid===currentUser.uid);my.textContent=currentUser?(mine>=0?`Sizning o‘rningiz: ${mine+1}-o‘rin · ${(Number(sorted[mine][key])||0).toLocaleString('uz-UZ')} ta so‘z`:'Siz top-50 ro‘yxatida emassiz yoki reytingga hali qo‘shilmagansiz. Aniq umumiy o‘rin ko‘rsatilmaydi.'):' ';sorted.slice(0,50).forEach((u,i)=>{const row=document.createElement('div');row.className='kibo-leader-row'+(currentUser&&u.uid===currentUser.uid?' is-me':'');const place=document.createElement('div');place.className='kibo-leader-place';place.textContent=i===0?'🥇':i===1?'🥈':i===2?'🥉':String(i+1);const avatar=document.createElement(u.photoURL?'img':'div');avatar.className='kibo-leader-avatar';if(u.photoURL){avatar.src=u.photoURL;avatar.alt=''}else avatar.textContent=(u.displayName||'K').trim().charAt(0).toUpperCase();const name=document.createElement('div');const n=document.createElement('div');n.className='kibo-leader-name';n.textContent=u.displayName||'KIBO o‘quvchisi';name.append(n);const count=document.createElement('div');count.className='kibo-leader-count';count.textContent=(Number(u[key])||0).toLocaleString('uz-UZ')+' ta so‘z';row.append(place,avatar,name,count);list.appendChild(row)})}
-<<<<<<< HEAD
  const leaderboardCacheByKey=new Map(),leaderboardInFlight=new Map();
  const LEADERBOARD_CACHE_MS=20000;
  async function refreshLeaderboard(){const list=$('kiboLeaderboard');if(!db){if(list)list.innerHTML='<div class="kibo-leaderboard-empty">Reytingni yuklash uchun internet va Firebase kerak.</div>';return}const key=period==='week'?'weekCount':'allCount';const cached=leaderboardCacheByKey.get(key);if(cached&&Date.now()-cached.at<LEADERBOARD_CACHE_MS){leaderCache=cached.rows;renderLeaderboard();return}if(leaderboardInFlight.has(key)){await leaderboardInFlight.get(key);return}if(list)list.innerHTML='<div class="kibo-leaderboard-empty">Reyting yangilanmoqda…</div>';const request=(async()=>{try{if(currentUser)await publishScore();const snap=await db.collection('leaderboard').orderBy(key,'desc').limit(50).get();const rows=snap.docs.map(doc=>({uid:doc.id,...doc.data()}));leaderboardCacheByKey.set(key,{at:Date.now(),rows});if((period==='week'?'weekCount':'allCount')===key){leaderCache=rows;renderLeaderboard()}}catch(e){console.error('Leaderboard load failed',e);if(list)list.innerHTML='<div class="kibo-leaderboard-empty">Reyting yuklanmadi. Firestore Rules bo‘limidagi leaderboard ruxsatlarini tekshiring.</div>';if($('kiboMyRank'))$('kiboMyRank').textContent='Reyting ma’lumotlarini olishda xatolik.'}finally{leaderboardInFlight.delete(key)}})();leaderboardInFlight.set(key,request);await request}
- $('kiboProfileName')?.addEventListener('input',()=>preview($('kiboProfileName').value,profileImageData));$('kiboProfileImage')?.addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{profileImageData=await resizeImage(file);preview($('kiboProfileName').value,profileImageData);setProfileStatus('Rasm tayyor. Saqlash tugmasini bosing.')}catch(err){setProfileStatus(err.message||'Rasmni o‘qib bo‘lmadi.',true)}});$('kiboSaveProfile')?.addEventListener('click',saveProfile);$('kiboRemoveProfileImage')?.addEventListener('click',()=>{profileImageData=null;$('kiboProfileImage').value='';preview($('kiboProfileName').value,null);setProfileStatus('Rasm olib tashlandi. O‘zgarishni saqlashni unutmang.')});document.querySelectorAll('[data-kibo-rank]').forEach(b=>b.addEventListener('click',()=>{period=b.dataset.kiboRank;document.querySelectorAll('[data-kibo-rank]').forEach(x=>x.classList.toggle('active',x===b));refreshLeaderboard()}));window.kiboRefreshLeaderboard=refreshLeaderboard;document.addEventListener('click',e=>{if(e.target.closest('[data-nav="settings"]'))setTimeout(loadProfile,200)});/* Do not read/write Firestore on every vocabulary review event. The score is refreshed when the learner opens Statistics or saves their profile. */window.addEventListener('storage',e=>{if(!e.key||e.key===REVIEW_KEY){/* local progress changed; defer cloud ranking work until Statistics is opened */}});document.addEventListener('kibo:review-updated',()=>{/* intentionally deferred to avoid a Firestore request per learned word */});
+ $('kiboProfileName')?.addEventListener('input',()=>preview($('kiboProfileName').value,profileImageData));$('kiboProfileImage')?.addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{profileImageData=await resizeImage(file);preview($('kiboProfileName').value,profileImageData);setProfileStatus('Rasm tayyor. Saqlash tugmasini bosing.')}catch(err){setProfileStatus(err.message||'Rasmni o‘qib bo‘lmadi.',true)}});$('kiboSaveProfile')?.addEventListener('click',saveProfile);$('kiboRemoveProfileImage')?.addEventListener('click',()=>{profileImageData=null;$('kiboProfileImage').value='';preview($('kiboProfileName').value,null);setProfileStatus('Rasm olib tashlandi. O‘zgarishni saqlashni unutmang.')});document.addEventListener('click',e=>{if(e.target.closest('[data-nav="settings"]'))setTimeout(loadProfile,200)});/* Leaderboard UI removed; avoid background score publishing. */window.addEventListener('storage',e=>{if(!e.key||e.key===REVIEW_KEY){/* local progress changed; cloud ranking is disabled */}});document.addEventListener('kibo:review-updated',()=>{/* leaderboard removed */});
  function init(){const editor=$('kiboProfileEditor');if(editor)editor.hidden=true;const notice=$('kiboProfileAuthNotice');if(notice)notice.hidden=false;if(!window.firebase||!firebase.apps?.length)return;auth=firebase.auth();db=firebase.firestore();auth.onAuthStateChanged(u=>{currentUser=u||null;setProfileAuthVisibility(currentUser);const statsView=$('kiboStatsView');if(statsView&&!statsView.hidden)refreshLeaderboard()})}
-=======
- async function refreshLeaderboard(){const list=$('kiboLeaderboard');if(!db){if(list)list.innerHTML='<div class="kibo-leaderboard-empty">Reytingni yuklash uchun internet va Firebase kerak.</div>';return}if(list)list.innerHTML='<div class="kibo-leaderboard-empty">Reyting yangilanmoqda…</div>';try{if(currentUser)await publishScore();const key=period==='week'?'weekCount':'allCount';const snap=await db.collection('leaderboard').orderBy(key,'desc').limit(50).get();leaderCache=snap.docs.map(doc=>({uid:doc.id,...doc.data()}));renderLeaderboard()}catch(e){console.error('Leaderboard load failed',e);if(list)list.innerHTML='<div class="kibo-leaderboard-empty">Reyting yuklanmadi. Firestore Rules bo‘limidagi leaderboard ruxsatlarini tekshiring.</div>';if($('kiboMyRank'))$('kiboMyRank').textContent='Reyting ma’lumotlarini olishda xatolik.'}}
- $('kiboProfileName')?.addEventListener('input',()=>preview($('kiboProfileName').value,profileImageData));$('kiboProfileImage')?.addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{profileImageData=await resizeImage(file);preview($('kiboProfileName').value,profileImageData);setProfileStatus('Rasm tayyor. Saqlash tugmasini bosing.')}catch(err){setProfileStatus(err.message||'Rasmni o‘qib bo‘lmadi.',true)}});$('kiboSaveProfile')?.addEventListener('click',saveProfile);$('kiboRemoveProfileImage')?.addEventListener('click',()=>{profileImageData=null;$('kiboProfileImage').value='';preview($('kiboProfileName').value,null);setProfileStatus('Rasm olib tashlandi. O‘zgarishni saqlashni unutmang.')});document.querySelectorAll('[data-kibo-rank]').forEach(b=>b.addEventListener('click',()=>{period=b.dataset.kiboRank;document.querySelectorAll('[data-kibo-rank]').forEach(x=>x.classList.toggle('active',x===b));refreshLeaderboard()}));window.kiboRefreshLeaderboard=refreshLeaderboard;document.addEventListener('click',e=>{if(e.target.closest('[data-nav="stats"]'))setTimeout(refreshLeaderboard,200);if(e.target.closest('[data-nav="settings"]'))setTimeout(loadProfile,200)});/* Do not read/write Firestore on every vocabulary review event. The score is refreshed when the learner opens Statistics or saves their profile. */window.addEventListener('storage',e=>{if(!e.key||e.key===REVIEW_KEY){/* local progress changed; defer cloud ranking work until Statistics is opened */}});document.addEventListener('kibo:review-updated',()=>{/* intentionally deferred to avoid a Firestore request per learned word */});
- function init(){const editor=$('kiboProfileEditor');if(editor)editor.hidden=true;const notice=$('kiboProfileAuthNotice');if(notice)notice.hidden=false;if(!window.firebase||!firebase.apps?.length)return;auth=firebase.auth();db=firebase.firestore();auth.onAuthStateChanged(async u=>{currentUser=u||null;setProfileAuthVisibility(currentUser);if(currentUser){try{await publishScore()}catch(e){console.warn('KIBO leaderboard publish',e)}}const statsView=$('kiboStatsView');if(statsView&&!statsView.hidden)refreshLeaderboard()})}
->>>>>>> 7e3c02e8dddcf8224252a4742331a125c2f44442
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
