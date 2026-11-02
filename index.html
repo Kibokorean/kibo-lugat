@@ -5440,6 +5440,340 @@ body.night #kiboStatsView .kibo-leaderboard-tabs button.active{background:var(--
 })();
 </script>
 
+<style id="kibo-ux-polish">
+/* ===== KIBO UI/UX polish layer ===== */
+:root{--ease:cubic-bezier(.2,.8,.2,1);--r-lg:22px;--r-md:16px;--ring:0 0 0 3px rgba(51,135,255,.45)}
+html{scroll-behavior:smooth}
+body{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;line-height:1.5}
+
+/* Klaviatura uchun aniq fokus (avval butunlay o'chirilgan edi) */
+button:focus-visible,.nav-link:focus-visible,.flashcard:focus-visible,a:focus-visible,input:focus-visible{outline:none!important;box-shadow:var(--ring)!important}
+
+/* Tugmalar: bosish va hover hissi */
+button{transition:transform .18s var(--ease),box-shadow .2s var(--ease),background-color .2s,border-color .2s,filter .2s}
+button:not(:disabled):active{transform:scale(.97)}
+button:disabled{opacity:.5;cursor:not-allowed}
+
+/* Yon menyu */
+#kiboSideNav .nav-link{position:relative;transition:background .2s,color .2s,transform .2s var(--ease)}
+#kiboSideNav .nav-link:hover{transform:translateX(3px)}
+#kiboSideNav .nav-link.active{font-weight:850}
+#kiboSideNav .nav-link.active:before{content:"";position:absolute;left:-16px;top:20%;bottom:20%;width:4px;border-radius:0 4px 4px 0;background:var(--blue)}
+#kiboSideNav .nav-icon{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;background:rgba(51,135,255,.10)}
+#kiboSideNav .nav-link.active .nav-icon{background:var(--blue);color:#fff}
+
+/* Mobil pastki menyu */
+#kiboMobileNav{backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);background:color-mix(in srgb,var(--panel) 88%,transparent)}
+#kiboMobileNav .nav-link{border-radius:14px;min-height:56px;transition:color .2s,background .2s}
+#kiboMobileNav .nav-link.active{background:rgba(51,135,255,.12)}
+#kiboMobileNav .nav-link.active .nav-icon{transform:translateY(-1px) scale(1.12)}
+
+/* Bosh sahifa: katta raqam */
+.home-mastered-number{background:linear-gradient(135deg,#63adff,#287cff);-webkit-background-clip:text;background-clip:text;color:transparent;font-variant-numeric:tabular-nums}
+.home-due-words,.review-calendar-panel,.kibo-flashcard-home{border-radius:var(--r-lg);transition:box-shadow .25s,transform .25s var(--ease)}
+.home-due-item{transition:transform .2s var(--ease),border-color .2s,background .2s}
+.home-due-item:hover{transform:translateY(-2px);border-color:var(--blue)}
+.home-due-start,.home-due-section-start,#startDueReview{transition:transform .2s var(--ease),box-shadow .2s;box-shadow:0 10px 26px rgba(40,124,255,.28)}
+.home-due-start:hover,#startDueReview:hover{transform:translateY(-2px);box-shadow:0 14px 32px rgba(40,124,255,.38)}
+
+/* Bo'limlar ro'yxati */
+.word-section-btn,.kibo-book-holo-button,.book1a-holo-category{transition:transform .25s var(--ease),box-shadow .25s,border-color .2s!important}
+.word-section-btn:hover{transform:translateY(-3px)!important;box-shadow:0 14px 30px rgba(40,124,255,.16)!important}
+.word-section-btn:focus-visible{box-shadow:var(--ring)!important}
+.word-section-btn.is-locked{cursor:not-allowed}
+
+/* O'rganish kartochkasi */
+.study{padding:clamp(16px,3vw,32px)}
+.flashcard{min-height:clamp(300px,46vh,430px)}
+.flash-front,.flash-back{border-radius:28px;transition:transform .5s var(--ease),box-shadow .3s}
+.flashcard:hover .flash-front,.flashcard:hover .flash-back{box-shadow:0 30px 64px rgba(0,0,0,.30)}
+.flashcard:after{content:"Aylantirish uchun bosing yoki Space";position:absolute;bottom:14px;left:0;right:0;text-align:center;font-size:11px;color:var(--muted);opacity:.75;pointer-events:none;transition:opacity .2s}
+.flashcard.flipped:after{opacity:0}
+.word{font-size:clamp(46px,9vw,76px)}
+.answer{font-size:clamp(38px,8vw,62px)}
+.word-definition{backdrop-filter:blur(6px)}
+
+/* Asosiy amal tugmalari: kattaroq, aniqroq */
+.show-answer{width:100%;max-width:420px;min-height:56px;font-size:16px;letter-spacing:.2px}
+.show-answer:hover{transform:translateY(-2px);box-shadow:0 18px 38px rgba(40,124,255,.38)}
+.judge{margin-top:16px}
+.judge button{min-height:60px;font-size:16px;border-width:1.5px}
+.judge .right{background:linear-gradient(135deg,rgba(53,213,138,.20),rgba(53,213,138,.08))}
+.judge .wrong{background:linear-gradient(135deg,rgba(255,100,123,.20),rgba(255,100,123,.08))}
+.judge .right:hover{box-shadow:0 10px 26px rgba(53,213,138,.28);transform:translateY(-2px)}
+.judge .wrong:hover{box-shadow:0 10px 26px rgba(255,100,123,.28);transform:translateY(-2px)}
+.nav-btn:hover{transform:translateY(-2px)}
+.nav-btn:disabled{opacity:.4}
+.status{margin-top:16px;color:var(--muted);font-weight:800;font-size:13px;font-variant-numeric:tabular-nums;letter-spacing:.4px}
+
+/* Progress */
+.progress{height:10px}
+.progress i{border-radius:999px;box-shadow:0 0 14px rgba(99,173,255,.55)}
+.stat{transition:transform .2s var(--ease)}
+.stat:hover{transform:translateY(-2px)}
+.stat b{font-variant-numeric:tabular-nums}
+
+/* Bosqich tugadi */
+.done-icon{animation:kiboPop .6s var(--ease) both}
+.next-btn{min-height:54px;border-radius:16px;transition:transform .2s var(--ease),box-shadow .2s}
+.next-btn:hover{transform:translateY(-2px)}
+@keyframes kiboPop{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+
+/* Modal (kod kiritish) */
+#kiboTelegramGate{animation:kiboFade .2s ease both}
+#kiboTelegramGate .kibo-tg-dialog{animation:kiboRise .3s var(--ease) both}
+#kiboAccessCodeInput:focus{border-color:var(--blue)!important;box-shadow:var(--ring)}
+@keyframes kiboFade{from{opacity:0}to{opacity:1}}
+@keyframes kiboRise{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+
+/* Sahifa almashganda yumshoq paydo bo'lish */
+#kiboHomeSummary,#kiboSectionsView,#kiboStatsView,#kiboSettingsView,#kiboTeacherView,.study{animation:kiboFade .35s ease both}
+
+/* Telefon: bosish maydonlari va pastki menyu uchun joy */
+@media(max-width:850px){
+  .app{padding-bottom:84px}
+  .flashcard:after{font-size:10px}
+  .judge button,.nav-btn{min-height:56px}
+  .show-answer{max-width:none}
+}
+/* Skeleton / yuklanish */
+.kibo-leaderboard-empty,.home-due-empty{color:var(--muted);text-align:center;padding:18px;border:1px dashed var(--line);border-radius:14px}
+/* Animatsiyani kamaytirish */
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition-duration:.01ms!important}}
+</style>
+<script id="kibo-ux-polish-js">
+(function(){
+ 'use strict';
+ var $=function(id){return document.getElementById(id)};
+ function visible(el){return !!el&&el.offsetParent!==null&&getComputedStyle(el).display!=='none'}
+ function typing(t){return t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable)}
+ function modalOpen(){var g=$('kiboTelegramGate');return g&&!g.hidden}
+ /* Klaviatura yorliqlari: Space/Enter = javob, ←/→ = oldingi/keyingi yoki xato/to'g'ri, 1/2 = xato/to'g'ri */
+ document.addEventListener('keydown',function(e){
+  if(e.ctrlKey||e.metaKey||e.altKey||typing(e.target)||modalOpen())return;
+  var app=$('wordApp');if(!visible(app))return;
+  var k=e.key,show=$('show'),judge=$('judge'),fc=$('flashcard');
+  var judging=judge&&judge.classList.contains('show');
+  if(judging){
+   if(k==='1'||k==='ArrowLeft'){e.preventDefault();$('wrong').click();return}
+   if(k==='2'||k==='ArrowRight'){e.preventDefault();$('right').click();return}
+  }
+  if((k===' '||k==='Enter')&&e.target.tagName!=='BUTTON'&&e.target!==fc){
+   if(visible(show)){e.preventDefault();show.click();return}
+   if(fc&&visible(fc)&&!judging){e.preventDefault();fc.click();return}
+  }
+  if(!judging&&visible($('stage1Nav'))){
+   if(k==='ArrowLeft'){e.preventDefault();$('prevWord').click()}
+   else if(k==='ArrowRight'){e.preventDefault();$('nextWord').click()}
+  }
+ });
+ /* Tugmalarga yorliq maslahati */
+ function hints(){
+  var m={wrong:'Noto‘g‘ri (1 yoki ←)',right:'To‘g‘ri (2 yoki →)',show:'Javobni ko‘rsatish (Space)',prevWord:'Oldingisi (←)',nextWord:'Keyingisi (→)',flashcard:'Aylantirish (Space)'};
+  Object.keys(m).forEach(function(id){var el=$(id);if(el&&!el.title)el.title=m[id]});
+  var nav=document.querySelectorAll('.nav-link[data-nav]');nav.forEach(function(b){if(!b.hasAttribute('aria-label'))b.setAttribute('aria-label',b.textContent.trim())});
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',hints);else hints();
+ /* Faol menyu bandini aria-current bilan belgilash */
+ var mo=new MutationObserver(function(){document.querySelectorAll('.nav-link').forEach(function(b){if(b.classList.contains('active'))b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')})});
+ document.querySelectorAll('.nav-link').forEach(function(b){mo.observe(b,{attributes:true,attributeFilter:['class']})});
+})();
+</script>
+
+<style id="kibo-ux-polish-2">
+/* ===== KIBO UI/UX polish — 2-qatlam: barcha ekranlar ===== */
+:root{--glow:0 10px 30px rgba(40,124,255,.22)}
+.word-section-picker .picker-card{border-radius:28px;box-shadow:var(--shadow)}
+/* Sarlavhalar va matn ierarxiyasi */
+.picker-brand{display:inline-block;padding:6px 13px;border-radius:999px;background:rgba(51,135,255,.12);color:var(--blue);font-size:11px;font-weight:900;letter-spacing:1.4px;margin-bottom:10px}
+.kibo-home-summary h1,.kibo-stats-heading h1,#kiboSectionsView>h2,#kiboSettingsView>h1{letter-spacing:-.6px;line-height:1.2}
+.kibo-welcome-greeting{color:var(--muted);font-size:15px;min-height:1.4em}
+.kibo-stats-heading p,#kiboSectionsView>p{color:var(--muted)}
+
+/* Yuqori panel (o'quv ekrani) */
+.top{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);background:color-mix(in srgb,var(--bg) 82%,transparent);height:84px}
+.theme{transition:transform .2s var(--ease),border-color .2s,background .2s}
+.theme:hover{transform:translateY(-1px);border-color:var(--blue)}
+.current-stage-info strong{box-shadow:0 0 0 5px rgba(50,135,255,.10),var(--glow)}
+.stage-pill{letter-spacing:.8px}
+
+/* Yon va o'ng panellar */
+.side,.right-panel{position:sticky;top:98px}
+.right-panel .ring-card,.right-panel .current-card,.right-panel .tip-card{border-radius:18px;transition:transform .2s var(--ease)}
+.right-panel .tip-card{background:linear-gradient(135deg,rgba(51,135,255,.12),rgba(133,81,255,.08));border:1px solid rgba(51,135,255,.2)}
+.right-panel .current-row{padding:7px 0;border-bottom:1px dashed var(--line)}
+.right-panel .current-row:last-child{border-bottom:0}
+.ring{transition:background .5s var(--ease)}
+
+/* Bo'limlar */
+#sectionGrid.picker-grid,.word-section-grid{gap:12px}
+.section-number{font-variant-numeric:tabular-nums;font-weight:900;box-shadow:inset 0 0 0 1px rgba(51,135,255,.18)}
+.section-status{font-weight:800;letter-spacing:.2px}
+.section-arrow{transition:transform .2s var(--ease)}
+.word-section-btn:hover .section-arrow{transform:translateX(4px)}
+.kibo-book-holo-button,.book1a-holo-category{border-radius:20px!important}
+.kibo-book-holo-button:hover,.book1a-holo-category:hover{transform:translateY(-3px);box-shadow:0 16px 36px rgba(40,124,255,.18)}
+.kibo-book-holo-button[aria-expanded="true"],.book1a-holo-category[aria-expanded="true"]{border-color:var(--blue)!important;box-shadow:var(--glow)}
+
+/* Reyting / statistika */
+.kibo-leaderboard-tabs{display:inline-flex;gap:4px;padding:5px;border:1px solid var(--line);border-radius:999px;background:var(--soft);margin:6px 0 16px}
+.kibo-leaderboard-tabs button{border:0;border-radius:999px;padding:10px 18px;background:transparent;color:var(--muted);font-weight:850;font-size:13px}
+.kibo-leaderboard-tabs button.active{background:var(--blue);color:#fff;box-shadow:var(--glow)}
+.kibo-leaderboard-tabs button:not(.active):hover{color:var(--text)}
+.kibo-my-rank:not(:empty){padding:14px 16px;border:1px solid rgba(51,135,255,.28);border-radius:16px;background:linear-gradient(135deg,rgba(51,135,255,.14),rgba(51,135,255,.04));font-weight:800;margin-bottom:14px}
+.kibo-leaderboard>*{transition:transform .2s var(--ease),border-color .2s}
+.kibo-leaderboard>*:not(.kibo-leaderboard-empty):hover{transform:translateX(3px);border-color:var(--blue)}
+.kibo-leaderboard>*:nth-child(1):not(.kibo-leaderboard-empty){border-color:#f5c451;background:linear-gradient(135deg,rgba(245,196,81,.16),transparent)}
+.kibo-leaderboard>*:nth-child(2):not(.kibo-leaderboard-empty){border-color:#aab6c8;background:linear-gradient(135deg,rgba(170,182,200,.14),transparent)}
+.kibo-leaderboard>*:nth-child(3):not(.kibo-leaderboard-empty){border-color:#d08a5a;background:linear-gradient(135deg,rgba(208,138,90,.14),transparent)}
+.kibo-stats-panel,.kibo-stats-grid>*{border-radius:18px}
+.kibo-stats-refresh{transition:transform .3s var(--ease)}.kibo-stats-refresh:hover{transform:rotate(30deg)}
+
+/* Sozlamalar */
+#kiboSettingsView{max-width:640px;margin-inline:auto}
+#kiboSettingsView h1{font-size:30px;margin:0 0 6px}
+.kibo-profile-editor{display:grid;gap:8px;text-align:left;padding:20px;border:1px solid var(--line);border-radius:20px;background:var(--panel2);margin:16px 0}
+.kibo-profile-editor label{font-size:12px;font-weight:850;color:var(--muted);margin-top:6px}
+.kibo-profile-editor input[type=text]{min-height:46px;padding:0 14px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--text);font:inherit}
+.kibo-profile-editor input:focus{border-color:var(--blue);box-shadow:var(--ring);outline:none}
+.kibo-profile-preview{width:84px;height:84px;margin:0 auto 6px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:linear-gradient(145deg,#257cff,#67a9ff);color:#fff;font-size:34px;font-weight:900;box-shadow:var(--glow)}
+.kibo-profile-preview img{width:100%;height:100%;object-fit:cover}
+.kibo-profile-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+.kibo-profile-actions button,.kibo-cloud-actions button{min-height:46px;padding:0 18px;border-radius:13px;border:1px solid transparent;background:var(--blue);color:#fff;font-weight:850}
+.kibo-profile-actions button.secondary,.kibo-cloud-actions button.secondary{background:var(--soft);color:var(--text);border-color:var(--line)}
+.kibo-cloud-card{border-radius:22px;text-align:left;margin-top:22px}
+.kibo-google-button{width:100%;min-height:52px;display:flex;align-items:center;justify-content:center;gap:10px;border-radius:14px;font-weight:850;border:1px solid var(--line);background:var(--panel);color:var(--text)}
+.kibo-google-button:hover{border-color:var(--blue);box-shadow:var(--glow);transform:translateY(-1px)}
+.kibo-google-mark{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:#fff;color:#ea4335;font-weight:900;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.kibo-cloud-status{padding:10px 12px;border-radius:12px;background:var(--soft);font-size:13px}
+.kibo-cloud-note{font-size:12px;line-height:1.6;color:var(--muted)}
+
+/* O'qituvchi kabineti */
+.kibo-teacher-card{border-radius:20px;padding:20px;border:1px solid var(--line);background:var(--panel2);margin:14px 0;transition:box-shadow .25s}
+.kibo-teacher-card:hover{box-shadow:var(--shadow)}
+.kibo-teacher-notice{padding:14px 16px;border-radius:14px;border:1px solid rgba(245,196,81,.4);background:rgba(245,196,81,.10)}
+
+/* Takrorlash kalendari */
+.review-calendar-grid{gap:7px}
+.review-day{border-radius:12px;transition:transform .15s var(--ease),border-color .15s,background .15s}
+.review-day:not(.empty):hover{transform:translateY(-2px);border-color:var(--blue)}
+.review-day.today{border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}
+.review-day-count{font-weight:900;font-variant-numeric:tabular-nums}
+.review-calendar-controls button:hover{background:var(--blue)!important;color:#fff;border-color:var(--blue)!important}
+
+/* Shaxsiy flashcard oynasi */
+.kibo-flashcard-dialog{border-radius:24px}
+.kibo-fc-flip{transition:transform .2s var(--ease)}
+
+/* Qorong'i rejim: kontrast */
+body.night{--muted:#a3b3cb;--line:#2a3f5c}
+body.night .kibo-profile-editor,body.night .kibo-teacher-card{background:#0f1c2f}
+/* Skrollbar */
+*{scrollbar-width:thin;scrollbar-color:rgba(120,150,195,.4) transparent}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:rgba(120,150,195,.4);border-radius:9px}
+/* Telefon */
+@media(max-width:850px){
+ .top{position:static;height:auto;backdrop-filter:none}
+ .side,.right-panel{position:static}
+ #kiboSettingsView{padding-inline:2px!important}
+ .kibo-leaderboard-tabs{display:flex;width:100%}.kibo-leaderboard-tabs button{flex:1;padding:11px 8px}
+ .kibo-profile-actions>*{flex:1}
+ .picker-brand{font-size:10px}
+}
+@media(hover:none){.word-section-btn:hover,.home-due-item:hover,.stat:hover,.nav-btn:hover{transform:none!important}}
+</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@500;700;800&display=swap">
+<style id="kibo-ux-polish-3">
+/* ===== KIBO dizayn 3-qatlam: ranglar, shriftlar, silliqlik ===== */
+:root{
+ --bg:#091220;--panel:#0f1b2e;--panel2:#13223a;--soft:#172842;--text:#f3f7ff;--muted:#a1b1c9;--line:#243751;
+ --blue:#3b8cff;--blue2:#7bb7ff;--green:#3ddc97;--red:#ff6b82;
+ --shadow:0 1px 2px rgba(0,0,0,.25),0 18px 50px rgba(0,0,0,.30);
+ --r-sm:12px;--r-md:16px;--r-lg:22px;--r-xl:28px
+}
+body:not(.night){
+ --bg:#f1f5fb;--panel:#ffffff;--panel2:#f7faff;--soft:#eef3fa;--text:#14213a;--muted:#63738d;--line:#dde6f2;
+ --blue:#2a7bf5;--blue2:#5a9dff;
+ --shadow:0 1px 2px rgba(30,60,110,.06),0 16px 44px rgba(36,79,135,.10)
+}
+
+/* Shriftlar */
+body{font-family:Inter,"Noto Sans KR","Malgun Gothic",system-ui,-apple-system,"Segoe UI",sans-serif;font-feature-settings:"cv11","ss01";letter-spacing:-.005em}
+h1,h2,h3{letter-spacing:-.02em;font-weight:800}
+.word,.answer,.example,.word-definition span{font-family:"Noto Sans KR","Malgun Gothic",Inter,sans-serif}
+.word{font-weight:700;letter-spacing:-.03em}
+.answer{font-weight:800;letter-spacing:-.025em;color:var(--text)}
+.example{color:var(--muted);line-height:1.7}
+small,.stat small,.kibo-cloud-note{letter-spacing:.04em}
+::selection{background:rgba(59,140,255,.28)}
+
+/* Fon: yumshoqroq va chuqurroq */
+body,body.night{background:
+ radial-gradient(900px 480px at 50% -10%,rgba(59,140,255,.16),transparent 60%),
+ radial-gradient(700px 400px at 100% 100%,rgba(133,81,255,.07),transparent 60%),var(--bg)}
+body:not(.night){background:
+ radial-gradient(900px 480px at 50% -10%,rgba(90,157,255,.20),transparent 60%),
+ radial-gradient(700px 400px at 100% 100%,rgba(150,120,255,.08),transparent 60%),var(--bg)}
+
+/* Yuzalar: bir xil radius, nozik chegara, qatlamli soya */
+.side,.study,.right-panel,.picker-card,.kibo-cloud-card,.home-due-words,.review-calendar-panel,.kibo-teacher-card,.kibo-profile-editor{
+ border-radius:var(--r-xl);border:1px solid color-mix(in srgb,var(--line) 85%,transparent);box-shadow:var(--shadow)}
+.side,.study,.right-panel{background:linear-gradient(160deg,color-mix(in srgb,var(--panel) 96%,#fff 4%),var(--panel))}
+body:not(.night) .side,body:not(.night) .study,body:not(.night) .right-panel{background:var(--panel)}
+#kiboSideNav{background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+
+/* Kartochka: toza, yorug' aksent */
+.flash-front,.flash-back{border-color:color-mix(in srgb,var(--blue) 22%,var(--line));
+ background:radial-gradient(circle at 18% 12%,rgba(59,140,255,.15),transparent 38%),radial-gradient(circle at 88% 92%,rgba(133,81,255,.10),transparent 40%),linear-gradient(150deg,#142843,#0e1c30);
+ box-shadow:0 2px 4px rgba(0,0,0,.2),0 28px 60px rgba(0,0,0,.30)}
+body:not(.night) .flash-front,body:not(.night) .flash-back{
+ background:radial-gradient(circle at 18% 12%,rgba(90,157,255,.14),transparent 40%),linear-gradient(150deg,#ffffff,#f1f6ff);
+ box-shadow:0 2px 4px rgba(30,60,110,.05),0 24px 54px rgba(36,79,135,.14)}
+.word-definition{background:color-mix(in srgb,var(--blue) 7%,transparent);border-color:color-mix(in srgb,var(--blue) 18%,var(--line));border-radius:var(--r-md)}
+.word-definition b{color:var(--blue2)}
+
+/* Tugmalar: yagona ko'k gradient va hover */
+.show-answer,.next-btn:not(.secondary-btn),.home-due-start,#startDueReview,.home-due-section-start,.kibo-profile-actions button:not(.secondary),.kibo-cloud-actions button:not(.secondary){
+ background:linear-gradient(135deg,#2a7bf5,#4c9bff);color:#fff;border:0;
+ box-shadow:0 1px 0 rgba(255,255,255,.25) inset,0 10px 26px rgba(42,123,245,.30)}
+.show-answer:hover,.next-btn:not(.secondary-btn):hover,.home-due-start:hover,#startDueReview:hover{filter:brightness(1.06)}
+.secondary-btn,.nav-btn{background:var(--panel2);border:1px solid var(--line);color:var(--text)}
+.nav-btn:hover,.secondary-btn:hover{border-color:var(--blue);background:color-mix(in srgb,var(--blue) 8%,var(--panel2))}
+.judge .right{color:var(--green);border-color:color-mix(in srgb,var(--green) 45%,transparent)}
+.judge .wrong{color:var(--red);border-color:color-mix(in srgb,var(--red) 45%,transparent)}
+
+/* Menyu */
+#kiboSideNav .nav-link{border-radius:14px;color:var(--muted);font-weight:700}
+#kiboSideNav .nav-link:hover{color:var(--text);background:color-mix(in srgb,var(--blue) 8%,transparent)}
+#kiboSideNav .nav-link.active{color:var(--blue2);background:color-mix(in srgb,var(--blue) 14%,transparent)}
+body:not(.night) #kiboSideNav .nav-link.active{color:var(--blue)}
+#kiboMobileNav .nav-link{color:var(--muted)}#kiboMobileNav .nav-link.active{color:var(--blue2)}
+body:not(.night) #kiboMobileNav .nav-link.active{color:var(--blue)}
+
+/* Progress va raqamlar */
+.progress{background:color-mix(in srgb,var(--blue) 10%,var(--soft))}
+.progress i{background:linear-gradient(90deg,#2a7bf5,#7bb7ff)}
+.stat{background:var(--soft);border-color:transparent;border-radius:14px}
+.stat b{font-size:20px;letter-spacing:-.02em}
+.state-pill,.stage-pill{background:color-mix(in srgb,var(--blue) 13%,transparent);color:var(--blue2);border-color:color-mix(in srgb,var(--blue) 25%,transparent)}
+body:not(.night) .state-pill,body:not(.night) .stage-pill{color:var(--blue)}
+
+/* Kiritish maydonlari */
+input[type=text],input[type=search],input[type=email]{font-family:inherit;border-radius:var(--r-sm)}
+input::placeholder{color:color-mix(in srgb,var(--muted) 75%,transparent)}
+
+/* Silliq rejim almashtirish (faqat asosiy yuzalar) */
+body,.side,.study,.right-panel,.picker-card,#kiboSideNav,#kiboMobileNav,.flash-front,.flash-back,.stat,.nav-btn{transition:background-color .35s ease,border-color .35s ease,color .25s ease,box-shadow .35s ease,transform .2s var(--ease)}
+
+/* Telefon */
+@media(max-width:850px){
+ .side,.study,.right-panel,.picker-card{border-radius:22px}
+ .word{letter-spacing:-.02em}
+}
+</style>
+
 </body>
 
 <style id="book2b-holo-card-styles">
