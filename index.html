@@ -1898,9 +1898,6 @@ body.night #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-p
 <section aria-label="Yodlangan so‘zlar" class="kibo-home-summary" id="kiboHomeSummary">
 <div class="picker-brand">KIBO KOREAN</div>
 <p id="kiboWelcomeGreeting" class="kibo-welcome-greeting" aria-live="polite"></p>
-<div id="kiboHomeGuest" class="kibo-home-guest" hidden style="min-height:0;padding:12px 0 20px;gap:0;max-width:100%">
-  <button type="button" id="kiboHomeGoogle" class="kibo-google-button"><span class="kibo-google-mark" aria-hidden="true">G</span> Google orqali ro‘yxatdan o‘tish</button>
-</div>
 <h1>Yodlangan so‘zlar</h1>
 <div class="home-mastered-number" id="homeMasteredCount">0</div>
 
@@ -6073,8 +6070,8 @@ body.night #kiboTelegramGate .kibo-tg-dialog,body.dark #kiboTelegramGate .kibo-t
  async function api(action,code){var user=getUser();if(!user)throw new Error('Avval Google orqali ro‘yxatdan o‘ting yoki hisobingizga kiring.');var token=await user.getIdToken();var r=await fetch('/api/access-code',{method:'POST',headers:{'Content-Type':'application/json','Cache-Control':'no-store'},body:JSON.stringify({action:action,idToken:token,code:code||''})});var d=await r.json().catch(function(){return {}});if(!r.ok||!d.ok)throw new Error(d.error||'So‘rov bajarilmadi. Qayta urinib ko‘ring.');return d;}
  function runOriginal(name,args){var fn=originalFunctions[name];if(typeof fn==='function')return fn.apply(window,args||[]);}
  function resumePending(){if(!pending)return;var task=pending;pending=null;closeGate();setTimeout(function(){if(task.callback)task.callback();else runOriginal(task.name,task.args)},0);}
- async function continuePending(){if(!pending||checking)return; if(!getUser()){showGoogleStep();setStatus('Davom etish uchun Google orqali ro‘yxatdan o‘ting yoki kiring.');return;}checking=true;showGoogleStep();setStatus('Ro‘yxatdan o‘tish holati tekshirilmoqda…');try{var d=await api('status');if(d.hasAccess){accessGranted=true;setStatus('Hisob va Telegram kodi tasdiqlangan.');resumePending();}else{setStatus('Google hisobi tasdiqlandi. Endi Telegram botidan olgan kodingizni kiriting.');}}catch(e){setStatus(e.message||'Server bilan bog‘lanib bo‘lmadi.',true);}finally{checking=false;}}
- async function openGate(name,args){var callArgs=Array.prototype.slice.call(args||[]);if(accessGranted){runOriginal(name,callArgs);return;}pending={name:name,args:callArgs};if(modal)modal.hidden=false;showGoogleStep();if(!getUser()){setStatus('Funksiyadan foydalanish uchun avval Google orqali ro‘yxatdan o‘ting.');return;}await continuePending();}
+ async function continuePending(){if(!pending||checking)return;if(!getUser()){if(modal)modal.hidden=false;showGoogleStep();setStatus('Davom etish uchun Google orqali ro‘yxatdan o‘ting yoki kiring.');return;}checking=true;showGoogleStep();try{var d=await api('status');if(d.hasAccess){accessGranted=true;resumePending();}else{if(modal)modal.hidden=false;setStatus('Google hisobi tasdiqlandi. Endi Telegram botidan olgan kodingizni kiriting.');}}catch(e){if(modal)modal.hidden=false;setStatus(e.message||'Server bilan bog‘lanib bo‘lmadi.',true);}finally{checking=false;}}
+ async function openGate(name,args){var callArgs=Array.prototype.slice.call(args||[]);if(accessGranted){runOriginal(name,callArgs);return;}pending={name:name,args:callArgs};showGoogleStep();if(!getUser()){if(modal)modal.hidden=false;setStatus('Funksiyadan foydalanish uchun avval Google orqali ro‘yxatdan o‘ting.');return;}await continuePending();}
  selectors.forEach(function(name){var original=window[name];if(typeof original!=='function'||original.__kiboAccessCodeWrapped)return;originalFunctions[name]=original;var wrapped=function(){return openGate(name,arguments);};wrapped.__kiboAccessCodeWrapped=true;window[name]=wrapped;});
  var originalStartDeck=window.startDeckStudy;if(typeof originalStartDeck==='function'&&!originalStartDeck.__kiboAccessCodeWrapped){originalFunctions.startDeckStudy=originalStartDeck;var wrappedDeck=function(){return openGate('startDeckStudy',arguments);};wrappedDeck.__kiboAccessCodeWrapped=true;window.startDeckStudy=wrappedDeck;}
  // Protect flashcard saving as well as vocabulary-study entry points.
@@ -6087,4 +6084,3 @@ body.night #kiboTelegramGate .kibo-tg-dialog,body.dark #kiboTelegramGate .kibo-t
  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&modal&&!modal.hidden){pending=null;closeGate();}});
 })();
 </script>
-
