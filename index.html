@@ -1826,6 +1826,13 @@ body.night #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-p
 #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcStudyActions button,#kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcJudgeActions button{flex:1;min-width:calc(50% - 8px);min-height:52px;font-size:14px;padding:12px}
 #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) #kiboFcStudyHint{margin:-14px 0 10px}
 }
+
+/* Guest homepage: show only Google registration until Firebase confirms a signed-in user. */
+.kibo-home-guest{width:100%;max-width:560px;margin:0 auto;min-height:42vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;text-align:center;padding:28px;box-sizing:border-box}
+.kibo-home-guest[hidden]{display:none!important}
+.kibo-home-guest-brand{font-size:clamp(24px,4vw,36px);font-weight:900;letter-spacing:-1px;color:var(--text)}
+.kibo-home-guest .kibo-google-button{max-width:390px;min-height:56px;padding:14px 22px;border-radius:14px;font-size:15px;border-color:#287cff;background:#287cff;color:#fff;box-shadow:0 10px 28px rgba(40,124,255,.22)}
+.kibo-home-guest .kibo-google-mark{background:#fff;flex:0 0 26px}
 </style>
 </head>
 <body>
@@ -1891,6 +1898,9 @@ body.night #kiboFlashcardOverlay:has(#kiboFcStudyPanel:not([hidden])) .kibo-fc-p
 <section aria-label="Yodlangan so‘zlar" class="kibo-home-summary" id="kiboHomeSummary">
 <div class="picker-brand">KIBO KOREAN</div>
 <p id="kiboWelcomeGreeting" class="kibo-welcome-greeting" aria-live="polite"></p>
+<div id="kiboHomeGuest" class="kibo-home-guest" hidden style="min-height:0;padding:12px 0 20px;gap:0;max-width:100%">
+  <button type="button" id="kiboHomeGoogle" class="kibo-google-button"><span class="kibo-google-mark" aria-hidden="true">G</span> Google orqali ro‘yxatdan o‘tish</button>
+</div>
 <h1>Yodlangan so‘zlar</h1>
 <div class="home-mastered-number" id="homeMasteredCount">0</div>
 
@@ -5029,8 +5039,10 @@ body.night .kibo-stat-card,body.night .kibo-stats-panel,body.night .kibo-stats-r
  const cloudWrite=async payload=>{await db.collection('users').doc(user.uid).set({...payload,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true})};
  const sync=async()=>{if(!auth||!user||syncBusy)return;syncBusy=true;setBusy(true);try{const local=readLocal(),cloudState=await cloudRead(),cloud=cloudState.progress,merged={...cloud};for(const key of PROGRESS_KEYS){if(key in local)merged[key]=key in cloud?mergeValue(local[key],cloud[key]):local[key];else if(key in cloud)merged[key]=cloud[key]}for(const key of PROGRESS_KEYS){if(key in merged){try{localStorage.setItem(key,JSON.stringify(merged[key]))}catch(e){console.warn('KIBO local progress restore skipped',key,e)}}}const progressChanged=JSON.stringify(merged)!==JSON.stringify(cloud);if(!cloudState.exists){await cloudWrite({progress:merged,accountEmail:user.email||null,accountDisplayName:user.displayName||null,registeredAt:firebase.firestore.FieldValue.serverTimestamp()})}else if(progressChanged){await cloudWrite({progress:merged})}setStatus('Lug‘at progressi sinxronlandi · '+new Date().toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'}),'ok');try{window.kiboRenderStatistics?.()}catch(e){}}catch(e){console.error('KIBO Firebase sync failed',e);setStatus('Sinxronlash amalga oshmadi: '+(e.code||e.message||'Firebase xatosi')+'. Mahalliy progress saqlanib qoldi. Firestore qoidalarini tekshir.','error')}finally{syncBusy=false;setBusy(false)}};
  const queueSync=()=>{if(!user||syncBusy)return;clearTimeout(syncTimer);syncTimer=setTimeout(()=>sync(),1600)};
- const showSession=async current=>{user=current||null;$('kiboCloudSignedOut').hidden=!!user;$('kiboCloudSignedIn').hidden=!user;$('kibo-cloud-auth').classList.toggle('is-signed-in',!!user);if(user){$('kiboCloudUser').textContent='Kirish: '+(user.email||user.displayName||'KIBO foydalanuvchisi');setStatus('Hisob ulandi. Lug‘at progressi tekshirilmoqda…');await sync()}else setStatus('Google orqali kiring yoki yangi hisob yarating.')};
+ const updateHomeForSession=current=>{const signedIn=!!current;document.body.classList.remove('kibo-guest-session');const guest=$('kiboHomeGuest'),home=$('kiboHomeSummary');if(guest)guest.hidden=signedIn;if(home)home.style.display='block';};
+ const showSession=async current=>{user=current||null;updateHomeForSession(user);$('kiboCloudSignedOut').hidden=!!user;$('kiboCloudSignedIn').hidden=!user;$('kibo-cloud-auth').classList.toggle('is-signed-in',!!user);if(user){$('kiboCloudUser').textContent='Kirish: '+(user.email||user.displayName||'KIBO foydalanuvchisi');setStatus('Hisob ulandi. Lug‘at progressi tekshirilmoqda…');await sync()}else setStatus('Google orqali kiring yoki yangi hisob yarating.')};
  const init=async()=>{if(!window.firebase||!firebase.initializeApp||!firebase.auth||!firebase.firestore){setStatus('Firebase kutubxonasi yuklanmadi. Internet ulanishini tekshir.','error');return}if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);auth=firebase.auth();db=firebase.firestore();auth.onAuthStateChanged(current=>{showSession(current).catch(e=>{console.error(e);setStatus('Hisob holatini ochib bo‘lmadi: '+(e.message||e),'error')})});};
+ $('kiboHomeGoogle')?.addEventListener('click',()=>{const button=$('kiboCloudGoogle');if(button)button.click()});
  $('kiboCloudGoogle').addEventListener('click',async()=>{setBusy(true);try{await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);const provider=new firebase.auth.GoogleAuthProvider();await auth.signInWithPopup(provider);setStatus('Google orqali muvaffaqiyatli kirdingiz.','ok')}catch(e){if(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-this-environment'){try{await auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());return}catch(err){e=err}}setStatus('Google orqali kirish amalga oshmadi: '+(e.code||e.message),'error')}finally{setBusy(false)}});
  $('kiboCloudSync').addEventListener('click',sync);
  $('kiboCloudLogout').addEventListener('click',async()=>{setBusy(true);try{await auth.signOut();user=null;setStatus('Hisobdan chiqildi. Mahalliy lug‘at progressi qurilmada saqlanadi.','ok')}catch(e){setStatus('Chiqish amalga oshmadi: '+(e.code||e.message),'error')}finally{setBusy(false)}});
@@ -6037,11 +6049,12 @@ body.night #kiboTelegramGate .kibo-tg-dialog,body.dark #kiboTelegramGate .kibo-t
   <div class="kibo-tg-icon" aria-hidden="true">🔑</div>
   <h2 id="kiboTelegramGateTitle">Kodni kiritish</h2>
   <p id="kiboTelegramGateDescription">So‘z yodlashni boshlash uchun Telegram botidan olgan kodingizni kiriting. Har bir kod faqat bitta foydalanuvchi uchun ishlaydi.</p>
-  <form id="kiboAccessCodeForm" autocomplete="off">
+  <button type="button" class="kibo-tg-primary" id="kiboGateGoogleButton" style="margin:0 0 12px">🌐 Google orqali ro‘yxatdan o‘tish / kirish</button>
+  <form id="kiboAccessCodeForm" autocomplete="off" hidden>
    <input id="kiboAccessCodeInput" name="accessCode" type="text" maxlength="32" placeholder="Masalan: KIBO-ABCDE-FG123" autocapitalize="characters" spellcheck="false" required style="box-sizing:border-box;width:100%;min-height:48px;padding:12px 14px;border:1px solid var(--line,#d6e2f4);border-radius:14px;background:var(--panel,#fff);color:var(--text,#17243b);font:inherit;text-align:center;text-transform:uppercase;letter-spacing:.06em">
    <button type="submit" class="kibo-tg-primary" id="kiboAccessCodeSubmit">Kodni tekshirish</button>
   </form>
-  <a class="kibo-tg-secondary" id="kiboGetAccessCodeButton" href="https://t.me/Koreystilida_bot?start=access_code" target="_blank" rel="noopener noreferrer">✈ Kodni olish — Telegram bot</a>
+  <a class="kibo-tg-secondary" id="kiboGetAccessCodeButton" hidden href="https://t.me/Koreystilida_bot?start=access_code" target="_blank" rel="noopener noreferrer">✈ Kodni olish — Telegram bot</a>
   <p class="kibo-tg-status" id="kiboTelegramGateStatus" role="status" aria-live="polite"></p>
   <button type="button" class="kibo-tg-secondary" id="kiboTelegramGateCancel">Hozir emas</button>
  </div>
@@ -6050,27 +6063,25 @@ body.night #kiboTelegramGate .kibo-tg-dialog,body.dark #kiboTelegramGate .kibo-t
 (function(){
  'use strict';
  var modal=document.getElementById('kiboTelegramGate'),statusEl=document.getElementById('kiboTelegramGateStatus');
- var pending=null,checking=false,accessGranted=false,originalFunctions=Object.create(null);
+ var codeForm=document.getElementById('kiboAccessCodeForm'),codeLink=document.getElementById('kiboGetAccessCodeButton'),googleButton=document.getElementById('kiboGateGoogleButton');
+ var pending=null,checking=false,accessGranted=false,bypassFlashcardSave=false,originalFunctions=Object.create(null);
  var selectors=['selectWordSection','selectSsokSection','selectSsokMidSection','selectSsokAdvancedSection','selectTopik30DaysSection','selectBook1ASection','selectBook1BSection','selectBook2ASection','selectBook2BSection','selectBook3ASection','selectBook3BSection'];
  function setStatus(message,error){if(statusEl){statusEl.textContent=message||'';statusEl.style.color=error?'#d83d58':'var(--muted,#71809a)';}}
  function getUser(){try{return window.firebase&&firebase.apps&&firebase.apps.length?firebase.auth().currentUser:null}catch(e){return null}}
+ function showGoogleStep(){if(googleButton)googleButton.hidden=!!getUser();if(codeForm)codeForm.hidden=!getUser();if(codeLink)codeLink.hidden=!getUser();}
  function closeGate(){if(modal)modal.hidden=true;}
- async function api(action,code){var user=getUser();if(!user)throw new Error('Avval Google orqali hisobingizga kiring.');var token=await user.getIdToken();var r=await fetch('/api/access-code',{method:'POST',headers:{'Content-Type':'application/json','Cache-Control':'no-store'},body:JSON.stringify({action:action,idToken:token,code:code||''})});var d=await r.json().catch(function(){return {}});if(!r.ok||!d.ok)throw new Error(d.error||'So‘rov bajarilmadi. Qayta urinib ko‘ring.');return d;}
+ async function api(action,code){var user=getUser();if(!user)throw new Error('Avval Google orqali ro‘yxatdan o‘ting yoki hisobingizga kiring.');var token=await user.getIdToken();var r=await fetch('/api/access-code',{method:'POST',headers:{'Content-Type':'application/json','Cache-Control':'no-store'},body:JSON.stringify({action:action,idToken:token,code:code||''})});var d=await r.json().catch(function(){return {}});if(!r.ok||!d.ok)throw new Error(d.error||'So‘rov bajarilmadi. Qayta urinib ko‘ring.');return d;}
  function runOriginal(name,args){var fn=originalFunctions[name];if(typeof fn==='function')return fn.apply(window,args||[]);}
- function resumePending(){if(!pending)return;var task=pending;pending=null;closeGate();setTimeout(function(){runOriginal(task.name,task.args)},0);}
- async function openGate(name,args){
-  var callArgs=Array.prototype.slice.call(args||[]);
-  /* A verified access grant is kept for this page session. This prevents nested
-     section selectors from re-running the status check in a loop. */
-  if(accessGranted){runOriginal(name,callArgs);return;}
-  pending={name:name,args:callArgs};if(modal)modal.hidden=false;setStatus('Kodingiz tekshirilmoqda…');if(checking)return;checking=true;
-  try{var d=await api('status');if(d.hasAccess){accessGranted=true;setStatus('Kirish tasdiqlandi.');resumePending();return;}setStatus('So‘z yodlash uchun Telegram botidan olgan kodingizni kiriting.');}
-  catch(e){setStatus(e.message||'Server bilan bog‘lanib bo‘lmadi.',true);}
-  finally{checking=false;}
- }
+ function resumePending(){if(!pending)return;var task=pending;pending=null;closeGate();setTimeout(function(){if(task.callback)task.callback();else runOriginal(task.name,task.args)},0);}
+ async function continuePending(){if(!pending||checking)return; if(!getUser()){showGoogleStep();setStatus('Davom etish uchun Google orqali ro‘yxatdan o‘ting yoki kiring.');return;}checking=true;showGoogleStep();setStatus('Ro‘yxatdan o‘tish holati tekshirilmoqda…');try{var d=await api('status');if(d.hasAccess){accessGranted=true;setStatus('Hisob va Telegram kodi tasdiqlangan.');resumePending();}else{setStatus('Google hisobi tasdiqlandi. Endi Telegram botidan olgan kodingizni kiriting.');}}catch(e){setStatus(e.message||'Server bilan bog‘lanib bo‘lmadi.',true);}finally{checking=false;}}
+ async function openGate(name,args){var callArgs=Array.prototype.slice.call(args||[]);if(accessGranted){runOriginal(name,callArgs);return;}pending={name:name,args:callArgs};if(modal)modal.hidden=false;showGoogleStep();if(!getUser()){setStatus('Funksiyadan foydalanish uchun avval Google orqali ro‘yxatdan o‘ting.');return;}await continuePending();}
  selectors.forEach(function(name){var original=window[name];if(typeof original!=='function'||original.__kiboAccessCodeWrapped)return;originalFunctions[name]=original;var wrapped=function(){return openGate(name,arguments);};wrapped.__kiboAccessCodeWrapped=true;window[name]=wrapped;});
  var originalStartDeck=window.startDeckStudy;if(typeof originalStartDeck==='function'&&!originalStartDeck.__kiboAccessCodeWrapped){originalFunctions.startDeckStudy=originalStartDeck;var wrappedDeck=function(){return openGate('startDeckStudy',arguments);};wrappedDeck.__kiboAccessCodeWrapped=true;window.startDeckStudy=wrappedDeck;}
- document.getElementById('kiboAccessCodeForm')?.addEventListener('submit',async function(e){e.preventDefault();if(checking)return;var input=document.getElementById('kiboAccessCodeInput'),button=document.getElementById('kiboAccessCodeSubmit'),code=(input.value||'').trim().toUpperCase();if(!code){setStatus('Kodni kiriting.',true);return;}checking=true;button.disabled=true;button.textContent='Tekshirilmoqda…';try{var d=await api('redeem',code);if(d.hasAccess){accessGranted=true;setStatus('Kod qabul qilindi! So‘z yodlash ochildi.');resumePending();}}catch(err){setStatus(err.message||'Kod tekshirilmadi.',true);}finally{checking=false;button.disabled=false;button.textContent='Kodni tekshirish';}});
+ // Protect flashcard saving as well as vocabulary-study entry points.
+ var saveDeck=document.getElementById('kiboFcSaveDeck');if(saveDeck){saveDeck.addEventListener('click',function(e){if(bypassFlashcardSave){bypassFlashcardSave=false;return;}if(accessGranted)return;e.preventDefault();e.stopImmediatePropagation();openGate('__kiboFlashcardSave',[]);},true);originalFunctions.__kiboFlashcardSave=function(){bypassFlashcardSave=true;saveDeck.click();};}
+ if(googleButton)googleButton.addEventListener('click',async function(){if(!window.firebase||!firebase.apps||!firebase.apps.length){setStatus('Firebase yuklanmoqda. Birozdan keyin qayta urinib ko‘ring.',true);return;}googleButton.disabled=true;try{var auth=firebase.auth();await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());showGoogleStep();setStatus('Google hisobi ulandi. Telegram kodini tekshiryapmiz…');setTimeout(continuePending,0);}catch(e){if(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-this-environment'){try{await firebase.auth().signInWithRedirect(new firebase.auth.GoogleAuthProvider());return;}catch(err){e=err;}}setStatus('Google orqali kirish amalga oshmadi: '+(e.code||e.message),true);}finally{googleButton.disabled=false;}});
+ if(window.firebase&&firebase.apps&&firebase.apps.length){firebase.auth().onAuthStateChanged(function(user){showGoogleStep();if(user&&pending)setTimeout(continuePending,0);});}
+ if(codeForm)codeForm.addEventListener('submit',async function(e){e.preventDefault();if(checking)return;var input=document.getElementById('kiboAccessCodeInput'),button=document.getElementById('kiboAccessCodeSubmit'),code=(input.value||'').trim().toUpperCase();if(!getUser()){showGoogleStep();setStatus('Avval Google orqali ro‘yxatdan o‘ting.',true);return;}if(!code){setStatus('Kodni kiriting.',true);return;}checking=true;button.disabled=true;button.textContent='Tekshirilmoqda…';try{var d=await api('redeem',code);if(d.hasAccess){accessGranted=true;setStatus('Kod qabul qilindi! Barcha funksiyalar ochildi.');resumePending();}}catch(err){setStatus(err.message||'Kod tekshirilmadi.',true);}finally{checking=false;button.disabled=false;button.textContent='Kodni tekshirish';}});
  document.getElementById('kiboTelegramGateCancel')?.addEventListener('click',function(){pending=null;closeGate();});
  modal?.addEventListener('click',function(e){if(e.target===modal){pending=null;closeGate();}});
  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&modal&&!modal.hidden){pending=null;closeGate();}});
