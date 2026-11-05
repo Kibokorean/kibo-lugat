@@ -1,0 +1,126 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Foydalanuvchi tizimga kirganini tekshirish
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Faol o'qituvchini Firestore orqali tekshirish
+    function isActiveTeacher() {
+      return signedIn()
+        && firestore.exists(
+          /databases/(default)/documents/teacherProfiles/$(request.auth.uid)
+        )
+        && firestore.get(
+          /databases/(default)/documents/teacherProfiles/$(request.auth.uid)
+        ).data.active == true;
+    }
+
+    // Eski formatdagi diktant rasmlari uchun 2 MB cheklov saqlanadi.
+    function isValidDictationImage() {
+      return request.resource != null
+        && request.resource.size > 0
+        && request.resource.size <= 2 * 1024 * 1024
+        && request.resource.contentType.matches(
+          'image/(jpeg|png|webp)'
+        );
+    }
+
+    // Eski formatdagi fayl nomi va metadata tekshiruvi.
+    function hasValidDictationMetadata(uid, fileName) {
+      return fileName.matches(
+          'yonsei3-lesson-[0-9]+-[0-9]+\\.(jpg|png|webp)'
+        )
+        && request.resource.metadata.ownerUid == uid
+        && request.resource.metadata.course == 'yonsei3'
+        && request.resource.metadata.topic.matches(
+          '([1-9]|[12][0-9]|30)'
+        );
+    }
+
+    // YANGI: ko'p rasmli batch tizimi uchun mavzu raqami.
+    function isValidYonsei3Topic(topic) {
+      return topic.matches('^([1-9]|[12][0-9]|30)$');
+    }
+
+    // YANGI: har bir batch rasmi UUID nomi bilan saqlanadi.
+    // Bu qoida rasm soni yoki fayl hajmiga maxsus limit qo'ymaydi.
+    function isValidYonsei3BatchImage(uid, topic, batchFolder, fileName) {
+      return request.resource != null
+        && request.resource.size > 0
+        && request.resource.contentType.matches('image/(jpeg|png|webp)')
+        && request.resource.metadata.keys().hasAll([
+          'ownerUid', 'course', 'topic', 'batchId'
+        ])
+        && request.resource.metadata.ownerUid == uid
+        && request.resource.metadata.course == 'yonsei3'
+        && request.resource.metadata.topic == topic
+        && request.resource.metadata.batchId.matches('^[a-fA-F0-9-]{36}$')
+        && batchFolder == 'yonsei3-lesson-' + topic + '-' + request.resource.metadata.batchId
+        && (
+          (
+            request.resource.contentType == 'image/jpeg'
+            && fileName.matches('^[a-fA-F0-9-]{36}\\.jpg$')
+          )
+          || (
+            request.resource.contentType == 'image/png'
+            && fileName.matches('^[a-fA-F0-9-]{36}\\.png$')
+          )
+          || (
+            request.resource.contentType == 'image/webp'
+            && fileName.matches('^[a-fA-F0-9-]{36}\\.webp$')
+          )
+        );
+    }
+
+    // YANGI: bitta mavzu bo'yicha barcha rasmlar bitta batch papkasida.
+    match /dictations/{uid}/{batchFolder}/{fileName} {
+      // O'quvchi o'z rasmlarini, faol o'qituvchi barcha rasmlarni ko'radi.
+      allow read: if signedIn()
+        && (
+          request.auth.uid == uid
+          || isActiveTeacher()
+        );
+
+      // Faqat egasi yangi rasm yuklaydi.
+      // Ilova darajasida image-count va file-size limiti belgilanmagan.
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && isValidYonsei3Topic(request.resource.metadata.topic)
+        && isValidYonsei3BatchImage(
+          uid,
+          request.resource.metadata.topic,
+          batchFolder,
+          fileName
+        );
+
+      // O'quvchi yoki brauzer topshirilgan rasmni o'zgartira/o'chira olmaydi.
+      // Tozalash server-side Cloud Function orqali bajariladi.
+      allow update, delete: if false;
+    }
+
+    // ESKI: avvalgi bitta rasmli diktantlar uchun moslik saqlanadi.
+    match /dictations/{uid}/{fileName} {
+      allow read: if signedIn()
+        && (
+          request.auth.uid == uid
+          || isActiveTeacher()
+        );
+
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && isValidDictationImage()
+        && hasValidDictationMetadata(uid, fileName);
+
+      // Eski qoidaga muvofiq faqat faol o'qituvchi o'chira oladi.
+      allow delete: if isActiveTeacher();
+      allow update: if false;
+    }
+
+    // Boshqa Storage yo'llari uchun ruxsat berilmagan.
+    // Ular sukut bo'yicha bloklanadi.
+  }
+}

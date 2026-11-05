@@ -1,50 +1,275 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() { return request.auth != null; }
+
+    // ==========================================
+    // COMMON FUNCTIONS
+    // ==========================================
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
     function activeTeacher() {
       return signedIn()
-        && exists(/databases/$(database)/documents/teacherProfiles/$(request.auth.uid))
-        && get(/databases/$(database)/documents/teacherProfiles/$(request.auth.uid)).data.active == true;
+        && exists(
+          /databases/$(database)/documents/teacherProfiles/$(request.auth.uid)
+        )
+        && get(
+          /databases/$(database)/documents/teacherProfiles/$(request.auth.uid)
+        ).data.active == true;
     }
+
+    // ==========================================
+    // TEACHER PROFILES
+    // ==========================================
+
     match /teacherProfiles/{uid} {
-      allow read: if signedIn() && request.auth.uid == uid;
-      allow write: if false;
+      allow read: if signedIn()
+        && request.auth.uid == uid;
+
+      // Teacher status faqat Admin SDK orqali boshqariladi.
+      allow create, update, delete: if false;
     }
+
+    // ==========================================
+    // USERS
+    // ==========================================
+
     match /users/{userId} {
-      allow read: if (signedIn() && request.auth.uid == userId) || activeTeacher();
-      allow create, update, delete: if signedIn() && request.auth.uid == userId;
-      // Personal flashcard sets are private to their Google-authenticated owner.
+
+      allow read: if signedIn()
+        && (
+          request.auth.uid == userId
+          || activeTeacher()
+        );
+
+      // Foydalanuvchi o‘z profilini boshqarishi mumkin.
+      // Teacher/admin huquqlari bu hujjatdan aniqlanmasligi kerak.
+      allow create, update: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasNone([
+            'role',
+            'isTeacher',
+            'admin',
+            'isAdmin',
+            'teacher',
+            'permissions'
+          ]);
+
+      allow delete: if signedIn()
+        && request.auth.uid == userId;
+
+      // Personal flashcard sets
       match /flashcardSets/{setId} {
-        allow read, create, update, delete: if signedIn() && request.auth.uid == userId;
+        allow read, create, update, delete: if signedIn()
+          && request.auth.uid == userId;
       }
     }
-    // Assignment access is private to the student and manageable only by active teachers.
-    match /kiboAssignmentAccess/{uid} {
-      allow read: if signedIn() && (request.auth.uid == uid || activeTeacher());
-      allow create, update: if activeTeacher()
+
+    // ==========================================
+    // KIBO COURSE ACCESS — NEW
+    // ==========================================
+
+    match /kiboCourseAccess/{uid} {
+
+      // O‘quvchi faqat o‘z kurs ruxsatlarini,
+      // faol o‘qituvchi esa ruxsat hujjatlarini ko‘ra oladi.
+      allow read: if signedIn()
+        && (
+          request.auth.uid == uid
+          || activeTeacher()
+        );
+
+      // Kurslarga ruxsat berish/faol ruxsatni bekor qilish
+      // faqat faol o‘qituvchi tomonidan bajariladi.
+      allow create: if activeTeacher()
         && request.resource.data.uid == uid
-        && request.resource.data.keys().hasOnly(['uid','email','kiboKorean1','grantedBy','updatedAt']);
+        && request.resource.data.grantedBy == request.auth.uid
+        && request.resource.data.keys().hasAll([
+          'uid',
+          'email',
+          'grantedBy',
+          'updatedAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'email',
+          'grantedBy',
+          'updatedAt',
+          'yonsei3',
+          'kiboKorean1',
+          'kiboKorean2'
+        ])
+        && (!('yonsei3' in request.resource.data)
+          || request.resource.data.yonsei3 is bool)
+        && (!('kiboKorean1' in request.resource.data)
+          || request.resource.data.kiboKorean1 is bool)
+        && (!('kiboKorean2' in request.resource.data)
+          || request.resource.data.kiboKorean2 is bool);
+
+      allow update: if activeTeacher()
+        && request.resource.data.uid == uid
+        && request.resource.data.grantedBy == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'email',
+          'grantedBy',
+          'updatedAt',
+          'yonsei3',
+          'kiboKorean1',
+          'kiboKorean2'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'email',
+          'grantedBy',
+          'updatedAt',
+          'yonsei3',
+          'kiboKorean1',
+          'kiboKorean2'
+        ])
+        && (!('yonsei3' in request.resource.data)
+          || request.resource.data.yonsei3 is bool)
+        && (!('kiboKorean1' in request.resource.data)
+          || request.resource.data.kiboKorean1 is bool)
+        && (!('kiboKorean2' in request.resource.data)
+          || request.resource.data.kiboKorean2 is bool);
+
       allow delete: if activeTeacher();
     }
+
+    // ==========================================
+    // KIBO ASSIGNMENT ACCESS — EXISTING
+    // ==========================================
+
+    match /kiboAssignmentAccess/{uid} {
+
+      allow read: if signedIn()
+        && (
+          request.auth.uid == uid
+          || activeTeacher()
+        );
+
+      allow create, update: if activeTeacher()
+        && request.resource.data.uid == uid
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'email',
+          'kiboKorean1',
+          'grantedBy',
+          'updatedAt'
+        ]);
+
+      allow delete: if activeTeacher();
+    }
+
+    // ==========================================
+    // LEADERBOARD
+    // ==========================================
+
     match /leaderboard/{uid} {
-      // Public leaderboard: anyone can view ranking, but only each signed-in
-      // user can create/update/delete their own leaderboard document.
+
       allow read: if true;
-      allow create, update: if signedIn() && request.auth.uid == uid
+
+      // Foydalanuvchi faqat o‘z hujjatini boshqaradi.
+      // Hisoblagichlar hozircha client tomonidan yozilishi mumkin.
+      allow create, update: if signedIn()
+        && request.auth.uid == uid
         && request.resource.data.uid == request.auth.uid
-        && request.resource.data.keys().hasOnly(['uid','displayName','photoURL','allCount','weekCount','updatedAt']);
-      allow delete: if signedIn() && request.auth.uid == uid;
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'displayName',
+          'photoURL',
+          'allCount',
+          'weekCount',
+          'updatedAt'
+        ]);
+
+      allow delete: if signedIn()
+        && request.auth.uid == uid;
     }
+
+    // ==========================================
+    // KIBO CLASSES
+    // ==========================================
+
     match /kiboClasses/{classId} {
-      allow create: if activeTeacher() && request.resource.data.teacherUid == request.auth.uid;
-      allow read, update, delete: if activeTeacher() && resource.data.teacherUid == request.auth.uid;
+
+      allow create: if activeTeacher()
+        && request.resource.data.teacherUid == request.auth.uid;
+
+      allow read, update, delete: if activeTeacher()
+        && resource.data.teacherUid == request.auth.uid;
     }
+
+    // ==========================================
+    // KIBO ASSIGNMENTS
+    // ==========================================
+
     match /kiboAssignments/{assignmentId} {
-      allow create: if activeTeacher() && request.resource.data.teacherUid == request.auth.uid
-        && exists(/databases/$(database)/documents/kiboClasses/$(request.resource.data.classId))
-        && get(/databases/$(database)/documents/kiboClasses/$(request.resource.data.classId)).data.teacherUid == request.auth.uid;
-      allow read, update, delete: if activeTeacher() && resource.data.teacherUid == request.auth.uid;
+
+      allow create: if activeTeacher()
+        && request.resource.data.teacherUid == request.auth.uid
+        && exists(
+          /databases/$(database)/documents/kiboClasses/$(request.resource.data.classId)
+        )
+        && get(
+          /databases/$(database)/documents/kiboClasses/$(request.resource.data.classId)
+        ).data.teacherUid == request.auth.uid;
+
+      allow read, update, delete: if activeTeacher()
+        && resource.data.teacherUid == request.auth.uid;
     }
+
+    // ==========================================
+    // YONSEI 3 - DICTATION SUBMISSIONS
+    // ==========================================
+
+    match /yonsei3DictationSubmissions/{submissionId} {
+
+      // O‘quvchi faqat o‘z diktantlarini ko‘radi.
+      // Faol o‘qituvchi barcha diktantlarni ko‘radi.
+      allow read: if signedIn()
+        && (
+          resource.data.uid == request.auth.uid
+          || activeTeacher()
+        );
+
+      // Diktant hujjatlarini faqat Firebase Admin SDK
+      // orqali server funksiyalari yaratadi va o‘zgartiradi.
+      allow create, update, delete: if false;
+
+      // ========================================
+      // DICTATION ATTEMPTS HISTORY
+      // ========================================
+
+      match /attempts/{attemptId} {
+
+        // O‘quvchi o‘z tarixini ko‘radi.
+        // Faol o‘qituvchi barcha tarixni ko‘radi.
+        allow read: if signedIn()
+          && exists(
+            /databases/$(database)/documents/yonsei3DictationSubmissions/$(submissionId)
+          )
+          && (
+            get(
+              /databases/$(database)/documents/yonsei3DictationSubmissions/$(submissionId)
+            ).data.uid == request.auth.uid
+            || activeTeacher()
+          );
+
+        // Tarix faqat server tomonidan boshqariladi.
+        allow create, update, delete: if false;
+      }
+    }
+
+    // ==========================================
+    // DEFAULT DENY
+    // ==========================================
+
+    // Yuqorida aniq ruxsat berilmagan barcha hujjatlar
+    // uchun Firestore avtomatik ravishda ruxsat bermaydi.
   }
 }
