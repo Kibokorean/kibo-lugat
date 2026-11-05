@@ -1,0 +1,44 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() { return request.auth != null; }
+
+    function isActiveTeacher() {
+      return signedIn()
+        && firestore.exists(/databases/(default)/documents/teacherProfiles/$(request.auth.uid))
+        && firestore.get(/databases/(default)/documents/teacherProfiles/$(request.auth.uid)).data.active == true;
+    }
+
+    function isValidDictationImage() {
+      return request.resource != null
+        && request.resource.size > 0
+        && request.resource.size <= 2 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+    }
+
+    function isValidTopic(topic) {
+      return topic.matches('([1-9]|[12][0-9]|30)');
+    }
+
+    function hasValidDictationMetadata(uid, fileName) {
+      return request.resource.metadata.ownerUid == uid
+        && request.resource.metadata.course == 'yonsei3'
+        && isValidTopic(request.resource.metadata.topic)
+        && fileName.matches(
+          'yonsei3-lesson-' + request.resource.metadata.topic + '-[0-9]+\\.(jpg|png|webp)'
+        );
+    }
+
+    match /dictations/{uid}/{fileName} {
+      allow read: if signedIn() && (request.auth.uid == uid || isActiveTeacher());
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && isValidDictationImage()
+        && hasValidDictationMetadata(uid, fileName);
+      allow update, delete: if false;
+    }
+
+    // Other Storage paths are denied unless separately authorized.
+  }
+}

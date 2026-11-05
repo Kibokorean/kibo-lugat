@@ -1,6 +1,5 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { setGlobalOptions } = require("firebase-functions/v2");
-const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { getStorage } = require("firebase-admin/storage");
@@ -42,6 +41,7 @@ const TOPIC_TITLES = {
   "29": "재미있는 지명 이야기",
   "30": "옛날에 쓰던 물건들"
 };
+const MAX_BYTES = 2 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 function imageSignatureIsValid(buffer, contentType) {
@@ -63,47 +63,8 @@ function isValidStoredDictationPath(storagePath, uid, topicNumber) {
   if (typeof storagePath !== "string" || typeof uid !== "string") return false;
   const prefix = `dictations/${uid}/`;
   if (!storagePath.startsWith(prefix) || storagePath.includes("..") || storagePath.includes("\\")) return false;
-  const relative = storagePath.slice(prefix.length);
-  const topic = Number(topicNumber);
-  // Legacy single-image object path remains readable for existing submissions.
-  if (new RegExp(`^yonsei3-lesson-${topic}-[0-9]+\\.(jpg|png|webp)$`).test(relative)) return true;
-  // New submission: one UUID folder per topic attempt, containing any number of UUID-named images.
-  return new RegExp(`^yonsei3-lesson-${topic}-[a-f0-9-]{36}/[a-f0-9-]{36}\\.(jpg|png|webp)$`, "i").test(relative);
-}
-
-function isValidDictationBatchId(value) {
-  return typeof value === "string" && /^[a-f0-9-]{36}$/i.test(value);
-}
-
-function readImageHeader(file) {
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    const stream = file.createReadStream({ start: 0, end: 11 });
-    stream.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
-    stream.on("error", reject);
-    stream.on("end", () => resolve(Buffer.concat(chunks)));
-  });
-}
-
-
-async function mapWithConcurrency(items, concurrency, worker) {
-  const results = new Array(items.length);
-  let nextIndex = 0;
-  let failure = null;
-  const runWorker = async () => {
-    while (!failure) {
-      const index = nextIndex++;
-      if (index >= items.length) return;
-      try {
-        results[index] = await worker(items[index], index);
-      } catch (error) {
-        failure = failure || error;
-      }
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, runWorker));
-  if (failure) throw failure;
-  return results;
+  const fileName = storagePath.slice(prefix.length);
+  return new RegExp(`^yonsei3-lesson-${Number(topicNumber)}-[0-9]+\\.(jpg|png|webp)$`).test(fileName);
 }
 
 function hasCanonicalSubmissionIdentity(submissionId, data) {
@@ -219,104 +180,45 @@ exports.finishYonsei3WrittenTest = onCall(async (request) => {
   return result;
 });
 
-
-// Remove only an unsubmitted batch owned by the authenticated user.
-// Submitted/current and historical attempts are protected from cleanup.
-exports.cleanupYonsei3DictationBatch = onCall(async (request) => {
+exports.submitYonsei3Dictation = onCall(async (request) => {
   if (!request.auth) throw new HttpsError("unauthenticated", "Avval hisobingizga kiring.");
   const uid = request.auth.uid;
   const topicNumber = Number(request.data?.topicNumber);
-  const batchId = request.data?.batchId;
-  if (!Number.isInteger(topicNumber) || topicNumber < 1 || topicNumber > 30 || !isValidDictationBatchId(batchId)) {
-    throw new HttpsError("invalid-argument", "Diktant to'plami ma'lumoti noto'g'ri.");
-  }
-  const submissionRef = getFirestore().collection("yonsei3DictationSubmissions").doc(`${uid}_yonsei3_${topicNumber}`);
-  const submission = await submissionRef.get();
-  if (submission.exists) {
-    const data = submission.data();
-    const inLegacyHistory = Array.isArray(data.attempts) && data.attempts.some((item) => item?.batchId === batchId);
-    if (data.batchId === batchId || inLegacyHistory) {
-      throw new HttpsError("failed-precondition", "Yuborilgan diktant rasmlarini o'chirib bo'lmaydi.");
-    }
-    const history = await submissionRef.collection("attempts").where("batchId", "==", batchId).limit(1).get();
-    if (!history.empty) throw new HttpsError("failed-precondition", "Tarixdagi diktant rasmlarini o'chirib bo'lmaydi.");
-  }
-  const prefix = `dictations/${uid}/yonsei3-lesson-${topicNumber}-${batchId}/`;
-  await getStorage().bucket().deleteFiles({ prefix, force: true }).catch((error) => {
-    console.error("Could not clean failed Yonsei 3 upload batch", error);
-    throw new HttpsError("internal", "Yuklanmay qolgan rasmlarni tozalash amalga oshmadi.");
-  });
-  return { ok: true };
-});
-
-exports.submitYonsei3Dictation = onCall({ timeoutSeconds: 540, memory: "1GiB" }, async (request) => {
-  if (!request.auth) throw new HttpsError("unauthenticated", "Avval hisobingizga kiring.");
-  const uid = request.auth.uid;
-  const topicNumber = Number(request.data?.topicNumber);
-  const batchId = request.data?.batchId;
+  const storagePath = request.data?.storagePath;
   const writtenTestSessionId = String(request.data?.writtenTestSessionId || "");
 
   if (!Number.isInteger(topicNumber) || topicNumber < 1 || topicNumber > 30 || !TOPIC_TITLES[String(topicNumber)]) {
     throw new HttpsError("invalid-argument", "Mavzu raqami noto'g'ri.");
   }
-  if (!isValidDictationBatchId(batchId)) {
-    throw new HttpsError("invalid-argument", "Topshiriq to'plami identifikatori noto'g'ri.");
+  // UID ni regex ichiga joylashtirmaymiz: Firebase UID qiymati regex metabelgilariga
+  // o'xshash belgilarni o'z ichiga olsa ham, faqat aniq papka prefiksi qabul qilinadi.
+  if (!isValidStoredDictationPath(storagePath, uid, topicNumber)) {
+    throw new HttpsError("permission-denied", "Diktant fayli yo'li yoki nomi noto'g'ri.");
   }
 
   const bucket = getStorage().bucket();
-  const folder = `yonsei3-lesson-${topicNumber}-${batchId}/`;
-  const prefix = `dictations/${uid}/${folder}`;
-  // Paginate Storage listing to avoid holding an unbounded image collection in memory.
-  // The page size is an internal processing batch, not a submission image-count limit.
-  let pageToken = undefined;
-  let imageCount = 0;
-  let totalSize = 0;
-  let firstContentType = "";
-  // Validate every uploaded object independently. No application-level file-count or file-size cap.
-  // Only the first 12 bytes are streamed for signature checks, so large images are not loaded into RAM.
-  try {
-    do {
-      const [files, , apiResponse] = await bucket.getFiles({ prefix, autoPaginate: false, maxResults: 100, pageToken });
-      const validatedFiles = await mapWithConcurrency(files, 8, async (file) => {
-        const path = file.name;
-        if (!isValidStoredDictationPath(path, uid, topicNumber)) {
-          throw new HttpsError("permission-denied", "Diktant fayli yo'li yoki nomi noto'g'ri.");
-        }
-        let metadata;
-        try { [metadata] = await file.getMetadata(); }
-        catch (_) { throw new HttpsError("not-found", "Diktant rasmlaridan biri Storage'da topilmadi."); }
-        const size = Number(metadata.size || 0);
-        const contentType = metadata.contentType || "";
-        const custom = metadata.metadata || {};
-        if (!size || !ALLOWED_TYPES.has(contentType)) {
-          throw new HttpsError("failed-precondition", "Rasmlardan birining formati talabga mos emas.");
-        }
-        if (custom.ownerUid !== uid || custom.course !== "yonsei3" || custom.topic !== String(topicNumber)
-          || custom.batchId !== batchId) {
-          throw new HttpsError("permission-denied", "Rasm metama'lumotlari mos kelmadi.");
-        }
-        const header = await readImageHeader(file);
-        if (!imageSignatureIsValid(header, contentType)) {
-          throw new HttpsError("invalid-argument", "Fayllardan biri haqiqiy JPG, PNG yoki WEBP rasm emas.");
-        }
-        return { size, contentType };
-      });
-      for (const item of validatedFiles) {
-        totalSize += item.size;
-        imageCount += 1;
-        if (!firstContentType) firstContentType = item.contentType;
-      }
-      pageToken = apiResponse?.nextPageToken;
-    } while (pageToken);
-  } catch (error) {
-    await bucket.deleteFiles({ prefix, force: true }).catch((cleanupError) => {
-      console.error("Could not clean invalid dictation batch", cleanupError);
-    });
-    if (error instanceof HttpsError) throw error;
-    console.error("Could not validate dictation batch", error);
-    throw new HttpsError("internal", "Diktant rasmlarini tekshirishda server xatoligi yuz berdi.");
+  const file = bucket.file(storagePath);
+  let metadata;
+  try { [metadata] = await file.getMetadata(); }
+  catch (_) { throw new HttpsError("not-found", "Diktant rasmi Storage'da topilmadi."); }
+
+  const size = Number(metadata.size || 0);
+  const contentType = metadata.contentType || "";
+  const custom = metadata.metadata || {};
+  if (!size || size > MAX_BYTES || !ALLOWED_TYPES.has(contentType)) {
+    await file.delete({ ignoreNotFound: true }).catch(() => {});
+    throw new HttpsError("failed-precondition", "Rasm hajmi yoki formati talabga mos emas.");
   }
-  if (!imageCount) throw new HttpsError("failed-precondition", "Topshiriq uchun birorta ham rasm yuklanmagan.");
+  if (custom.ownerUid !== uid || custom.course !== "yonsei3" || custom.topic !== String(topicNumber)) {
+    await file.delete({ ignoreNotFound: true }).catch(() => {});
+    throw new HttpsError("permission-denied", "Rasm metama'lumotlari mos kelmadi.");
+  }
+
+  const [bytes] = await file.download();
+  if (bytes.length !== size || !imageSignatureIsValid(bytes, contentType)) {
+    await file.delete({ ignoreNotFound: true }).catch(() => {});
+    throw new HttpsError("invalid-argument", "Fayl haqiqiy JPG, PNG yoki WEBP rasm emas.");
+  }
 
   const db = getFirestore();
   const submissionId = `${uid}_yonsei3_${topicNumber}`;
@@ -327,6 +229,8 @@ exports.submitYonsei3Dictation = onCall({ timeoutSeconds: 540, memory: "1GiB" },
       if (existing.exists && existing.data().status !== "rejected") {
         throw new HttpsError("already-exists", "Bu mavzu uchun topshiriq allaqachon yuborilgan yoki tasdiqlangan.");
       }
+      // First submission requires a one-time, server-passed written-test session.
+      // Rejected dictation resubmissions intentionally skip memorization/test.
       let writtenTestRef = null;
       if (!existing.exists || existing.data().status !== "rejected") {
         if (!/^[a-f0-9-]{36}$/i.test(writtenTestSessionId)) {
@@ -340,26 +244,37 @@ exports.submitYonsei3Dictation = onCall({ timeoutSeconds: 540, memory: "1GiB" },
           throw new HttpsError("failed-precondition", "Yozma test natijasi server tomonidan tasdiqlanmagan yoki avval ishlatilgan.");
         }
       }
+      // Server-side ketma-ketlik himoyasi: faqat bevosita oldingi mavzuni emas,
+      // undan avvalgi BARCHA mavzularni tekshiramiz. Aks holda client chetlab
+      // o'tilib, oldingi mavzu rejected bo'lsa ham keyingi mavzu yuborilishi mumkin.
       for (let previousNumber = 1; previousNumber < topicNumber; previousNumber++) {
-        const previousRef = db.collection("yonsei3DictationSubmissions").doc(`${uid}_yonsei3_${previousNumber}`);
+        const previousRef = db.collection("yonsei3DictationSubmissions")
+          .doc(`${uid}_yonsei3_${previousNumber}`);
         const previous = await tx.get(previousRef);
         const previousData = previous.exists ? previous.data() : null;
-        if (!previousData || previousData.uid !== uid || previousData.course !== "yonsei3"
+        if (!previousData
+          || previousData.uid !== uid
+          || previousData.course !== "yonsei3"
           || !["submitted", "approved"].includes(previousData.status)) {
-          throw new HttpsError("failed-precondition", `${previousNumber}-mavzu diktanti hali muvaffaqiyatli topshirilmagan yoki rad etilgan. Avval shu mavzuni qayta topshiring.`);
+          throw new HttpsError(
+            "failed-precondition",
+            `${previousNumber}-mavzu diktanti hali muvaffaqiyatli topshirilmagan yoki rad etilgan. Avval shu mavzuni qayta topshiring.`
+          );
         }
       }
-      if (writtenTestRef) tx.update(writtenTestRef, { consumed: true, consumedAt: FieldValue.serverTimestamp() });
+      if (writtenTestRef) {
+        tx.update(writtenTestRef, { consumed: true, consumedAt: FieldValue.serverTimestamp() });
+      }
       const old = existing.exists ? existing.data() : null;
-      const oldVersion = Number(old?.submissionVersion || 0);
+      const attempts = Array.isArray(old?.attempts) ? old.attempts.slice(-9) : [];
       if (old) {
+        const oldVersion = Number(old.submissionVersion || 1);
+        // Keep every future historical attempt in its own document. This avoids
+        // truncating the audit trail or growing the parent document indefinitely.
         tx.set(ref.collection("attempts").doc(String(oldVersion)), {
-          storagePath: old.storagePath || null,
-          batchId: old.batchId || null,
-          imageCount: Number(old.imageCount || (old.storagePath ? 1 : 0)),
-          totalSize: Number(old.totalSize || old.size || 0),
+          storagePath: old.storagePath,
           contentType: old.contentType || "",
-          size: Number(old.size || old.totalSize || 0),
+          size: Number(old.size || 0),
           submittedAt: old.submittedAt || null,
           status: old.status || "unknown",
           reviewedAt: old.reviewedAt || null,
@@ -367,50 +282,58 @@ exports.submitYonsei3Dictation = onCall({ timeoutSeconds: 540, memory: "1GiB" },
           teacherComment: old.teacherComment || "",
           submissionVersion: oldVersion
         });
+        // Retain a small legacy copy for compatibility with older clients/data.
+        attempts.push({ storagePath: old.storagePath, contentType: old.contentType, size: old.size, submittedAt: old.submittedAt || null, status: old.status, reviewedAt: old.reviewedAt || null, reviewedBy: old.reviewedBy || null, teacherComment: old.teacherComment || "", submissionVersion: oldVersion });
       }
-      const submissionVersion = oldVersion + 1;
+      const submissionVersion = Number(old?.submissionVersion || 0) + 1;
       tx.set(ref, {
-        uid, topicNumber, topicTitle: TOPIC_TITLES[String(topicNumber)], course: "yonsei3",
-        batchId, imageCount, totalSize,
-        // Keep legacy fields for old UI/data compatibility; new submissions use batchId.
-        contentType: imageCount === 1 ? firstContentType : "multiple",
-        size: totalSize,
-        status: "submitted", submissionVersion,
-        submittedAt: FieldValue.serverTimestamp(), verifiedAt: FieldValue.serverTimestamp(),
-        reviewedAt: FieldValue.delete(), reviewedBy: FieldValue.delete(), teacherComment: FieldValue.delete()
+        uid,
+        topicNumber,
+        topicTitle: TOPIC_TITLES[String(topicNumber)],
+        course: "yonsei3",
+        storagePath,
+        contentType,
+        size,
+        status: "submitted",
+        submissionVersion,
+        submittedAt: FieldValue.serverTimestamp(),
+        verifiedAt: FieldValue.serverTimestamp(),
+        attempts,
+        reviewedAt: FieldValue.delete(),
+        reviewedBy: FieldValue.delete(),
+        teacherComment: FieldValue.delete()
       }, { merge: true });
     });
   } catch (error) {
-    // Delete only this unreferenced batch. If Firestore cannot be checked, retain files safely.
+    // Idempotency/race protection: a repeated callable request may reference the
+    // exact same client-generated Storage path as a successful concurrent request.
+    // Never delete an object that is already referenced by the canonical submission
+    // or by its retained attempt history.
     let isReferenced = false;
     try {
       const latest = await ref.get();
       if (latest.exists) {
         const data = latest.data() || {};
-        isReferenced = data.batchId === batchId
-          || (Array.isArray(data.attempts) && data.attempts.some((a) => a?.batchId === batchId));
+        isReferenced = data.storagePath === storagePath
+          || (Array.isArray(data.attempts) && data.attempts.some((attempt) => attempt?.storagePath === storagePath));
         if (!isReferenced) {
-          const historical = await ref.collection("attempts").where("batchId", "==", batchId).limit(1).get();
+          const historical = await ref.collection("attempts").where("storagePath", "==", storagePath).limit(1).get();
           isReferenced = !historical.empty;
         }
       }
     } catch (lookupError) {
-      console.error("Could not verify dictation batch reference after transaction failure", lookupError);
+      // Fail closed for cleanup: if reference state cannot be checked, keep the file.
+      console.error("Could not verify dictation object reference after transaction failure", lookupError);
       isReferenced = true;
     }
-    if (!isReferenced) {
-      await bucket.deleteFiles({ prefix, force: true }).catch((cleanupError) => {
-        console.error("Could not clean unreferenced dictation batch", cleanupError);
-      });
-    }
+    if (!isReferenced) await file.delete({ ignoreNotFound: true }).catch(() => {});
     if (error instanceof HttpsError) throw error;
     console.error("submitYonsei3Dictation transaction failed", error);
     throw new HttpsError("internal", "Topshiriqni saqlashda server xatoligi yuz berdi.");
   }
 
   const latest = await ref.get();
-  return { ok: true, submissionId, topicNumber, topicTitle: TOPIC_TITLES[String(topicNumber)], status: "submitted",
-    submissionVersion: Number(latest.data()?.submissionVersion || 1), imageCount, totalSize };
+  return { ok: true, submissionId, topicNumber, topicTitle: TOPIC_TITLES[String(topicNumber)], status: "submitted", submissionVersion: Number(latest.data()?.submissionVersion || 1) };
 });
 
 // A successful student submission completes/unlocks the topic immediately.
@@ -462,8 +385,7 @@ exports.listYonsei3Submissions = onCall(async (request) => {
     for (const attemptDoc of historySnap.docs) byVersion.set(Number(attemptDoc.data().submissionVersion || attemptDoc.id), attemptDoc.data());
     const attempts = [...byVersion.values()].sort((a, b) => Number(a.submissionVersion || 0) - Number(b.submissionVersion || 0)).map((a) => ({
       contentType: a.contentType || "",
-      size: Number(a.totalSize || a.size || 0),
-      imageCount: Number(a.imageCount || (a.storagePath ? 1 : 0)),
+      size: Number(a.size || 0),
       submittedAt: a.submittedAt?.toMillis?.() || null,
       status: a.status || "unknown",
       reviewedAt: a.reviewedAt?.toMillis?.() || null,
@@ -472,7 +394,7 @@ exports.listYonsei3Submissions = onCall(async (request) => {
       submissionVersion: Number(a.submissionVersion || 0)
     }));
     return { id: doc.id, uid: d.uid, topicNumber: d.topicNumber, topicTitle: d.topicTitle,
-      contentType: d.contentType, size: Number(d.totalSize || d.size || 0), imageCount: Number(d.imageCount || (d.storagePath ? 1 : 0)),
+      contentType: d.contentType, size: d.size,
       status: d.status, submissionVersion: Number(d.submissionVersion || 1),
       submittedAt: d.submittedAt?.toMillis?.() || null,
       teacherComment: d.teacherComment || "", attempts };
@@ -491,46 +413,34 @@ exports.getYonsei3DictationImage = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "Topshiriq yoki urinish raqami noto'g'ri.");
   }
   const snap = await getFirestore().collection("yonsei3DictationSubmissions").doc(submissionId).get();
-  if (!snap.exists || snap.data().course !== "yonsei3") throw new HttpsError("not-found", "Diktant topshirig'i topilmadi.");
+  if (!snap.exists || snap.data().course !== "yonsei3") {
+    throw new HttpsError("not-found", "Diktant topshirig'i topilmadi.");
+  }
   const data = snap.data();
-  if (!hasCanonicalSubmissionIdentity(submissionId, data)) throw new HttpsError("failed-precondition", "Topshiriq identifikatori noto'g'ri.");
-
-  let batchId = null;
-  let legacyPath = null;
+  if (!hasCanonicalSubmissionIdentity(submissionId, data)) {
+    throw new HttpsError("failed-precondition", "Topshiriq identifikatori noto'g'ri.");
+  }
+  let storagePath = null;
   if (Number(data.submissionVersion || 1) === version) {
-    batchId = data.batchId || null;
-    legacyPath = data.storagePath || null;
+    storagePath = data.storagePath;
   } else {
     const attemptSnap = await snap.ref.collection("attempts").doc(String(version)).get();
-    if (attemptSnap.exists) {
-      batchId = attemptSnap.data().batchId || null;
-      legacyPath = attemptSnap.data().storagePath || null;
-    }
-    if (!batchId && !legacyPath) {
-      const legacyAttempt = (Array.isArray(data.attempts) ? data.attempts : []).find((item) => Number(item.submissionVersion || 0) === version);
-      batchId = legacyAttempt?.batchId || null;
-      legacyPath = legacyAttempt?.storagePath || null;
+    if (attemptSnap.exists) storagePath = attemptSnap.data().storagePath || null;
+    if (!storagePath) {
+      const legacyAttempt = (Array.isArray(data.attempts) ? data.attempts : [])
+        .find((item) => Number(item.submissionVersion || 0) === version);
+      storagePath = legacyAttempt?.storagePath || null;
     }
   }
-
-  const bucket = getStorage().bucket();
-  const requestedPageToken = typeof request.data?.pageToken === "string" ? request.data.pageToken : undefined;
-  let paths = [];
-  let nextPageToken = null;
-  if (isValidDictationBatchId(batchId)) {
-    const prefix = `dictations/${data.uid}/yonsei3-lesson-${data.topicNumber}-${batchId}/`;
-    const [objects, , apiResponse] = await bucket.getFiles({ prefix, autoPaginate: false, maxResults: 100, pageToken: requestedPageToken });
-    paths = objects.map((file) => file.name).filter((path) => isValidStoredDictationPath(path, data.uid, data.topicNumber));
-    nextPageToken = apiResponse?.nextPageToken || null;
-  } else if (!requestedPageToken && isValidStoredDictationPath(legacyPath, data.uid, data.topicNumber)) {
-    paths = [legacyPath];
+  if (!isValidStoredDictationPath(storagePath, data.uid, data.topicNumber)) {
+    throw new HttpsError("not-found", "Ushbu urinish uchun rasm topilmadi.");
   }
-  if (!paths.length && !nextPageToken) throw new HttpsError("not-found", "Ushbu urinish uchun rasmlar topilmadi.");
-  const images = await Promise.all(paths.map(async (path) => {
-    const [url] = await bucket.file(path).getSignedUrl({ version: "v4", action: "read", expires: Date.now() + 5 * 60 * 1000 });
-    return { url };
-  }));
-  return { images, url: images[0]?.url || null, imageCount: images.length, nextPageToken, expiresInSeconds: 300 };
+  const [url] = await getStorage().bucket().file(storagePath).getSignedUrl({
+    version: "v4",
+    action: "read",
+    expires: Date.now() + 5 * 60 * 1000
+  });
+  return { url, expiresInSeconds: 300 };
 });
 
 exports.reviewYonsei3Submission = onCall(async (request) => {
@@ -565,174 +475,4 @@ exports.reviewYonsei3Submission = onCall(async (request) => {
       reviewedAt: FieldValue.serverTimestamp(), teacherComment });
   });
   return { ok: true, submissionId, status: decision };
-});
-
-
-// -----------------------------------------------------------------------------
-// KIBO SERVER-OWNED LEADERBOARD
-// Client SDKs can never write leaderboard or ledger documents. The server
-// records one deterministic entry per user/word and derives all counters.
-// -----------------------------------------------------------------------------
-const KIBO_REVIEW_KEY = "kibo_spaced_review_v1";
-const KIBO_LEDGER = "kiboLeaderboardProgress";
-const KIBO_LEADERBOARD = "leaderboard";
-const KIBO_MIGRATIONS = "kiboLeaderboardMigrations";
-const crypto = require("crypto");
-
-function kiboWordHash(ko, uz, source) {
-  return crypto.createHash("sha256").update(JSON.stringify([String(source || ""), String(ko), String(uz)])).digest("hex");
-}
-function validKiboWord(data) {
-  return data && typeof data.ko === "string" && data.ko.trim().length > 0 && data.ko.length <= 160
-    && typeof data.uz === "string" && data.uz.trim().length > 0 && data.uz.length <= 500;
-}
-function kiboSafeText(value, max, fallback = "") {
-  return typeof value === "string" ? value.trim().slice(0, max) : fallback;
-}
-async function requireKiboUser(request) {
-  if (!request.auth) throw new HttpsError("unauthenticated", "Avval hisobingizga kiring.");
-  return request.auth.uid;
-}
-
-// One-time import of the legacy cloud review store. Existing records are
-// explicitly tagged legacy-unverified: old client-writable data cannot be
-// retroactively proven authentic. The import is idempotent and preserves keys.
-exports.migrateKiboLegacyProgress = onCall({ maxInstances: 5 }, async (request) => {
-  const uid = await requireKiboUser(request);
-  const db = getFirestore();
-  const markerRef = db.collection(KIBO_MIGRATIONS).doc(uid);
-  const userRef = db.collection("users").doc(uid);
-  const claim = await db.runTransaction(async (tx) => {
-    const marker = await tx.get(markerRef);
-    if (marker.exists && marker.data().status === "complete") return { alreadyComplete: true };
-    if (marker.exists && marker.data().status === "running") return { alreadyRunning: true };
-    tx.set(markerRef, { uid, status: "running", startedAt: FieldValue.serverTimestamp(), version: 1 }, { merge: true });
-    return { start: true };
-  });
-  if (claim.alreadyComplete) return { ok: true, migrated: false, reason: "already-complete" };
-  if (claim.alreadyRunning) return { ok: true, migrated: false, reason: "already-running" };
-  try {
-    const userSnap = await userRef.get();
-    const progress = userSnap.exists ? userSnap.data()?.progress : null;
-    const legacy = progress && typeof progress === "object" ? progress[KIBO_REVIEW_KEY] : null;
-    const entries = legacy && typeof legacy === "object" && !Array.isArray(legacy) ? Object.entries(legacy) : [];
-    if (entries.length > 20000) throw new HttpsError("resource-exhausted", "Legacy progress juda katta; administrator migratsiyasi talab qilinadi.");
-    let batch = db.batch(), writes = 0, imported = 0;
-    for (const [legacyKey, item] of entries) {
-      if (!validKiboWord(item) || !Number.isFinite(Number(item.due)) || !Number.isFinite(Number(item.last))) continue;
-      let keySource = "";
-      try { const parsedKey = JSON.parse(String(legacyKey)); if (Array.isArray(parsedKey) && typeof parsedKey[0] === "string") keySource = parsedKey[0]; } catch (_) {}
-      const source = kiboSafeText(keySource || item.reviewSourceId || item.sectionTitle || item.bookName || item.sourceTitle || item.section || "legacy", 240, "legacy");
-      const hash = kiboWordHash(item.ko.trim(), item.uz.trim(), source);
-      const ref = db.collection(KIBO_LEDGER).doc(uid).collection("words").doc(hash);
-      const last = Math.min(Number(item.last), Date.now());
-      batch.set(ref, {
-        uid, wordHash: hash, ko: item.ko.trim(), uz: item.uz.trim(), source,
-        sectionTitle: kiboSafeText(item.sectionTitle || item.bookName || item.sourceTitle, 240),
-        learnedAt: new Date(last), lastReviewedAt: new Date(last), dueAt: new Date(Number(item.due)),
-        sourceType: "legacy-unverified", legacyKey: String(legacyKey).slice(0, 500),
-        migratedAt: FieldValue.serverTimestamp()
-      }, { merge: true });
-      writes++; imported++;
-      if (writes >= 400) { await batch.commit(); batch = db.batch(); writes = 0; }
-    }
-    if (writes) await batch.commit();
-    await markerRef.set({ uid, status: "complete", imported, completedAt: FieldValue.serverTimestamp(), legacyTrust: "unverified-client-origin" }, { merge: true });
-    await recomputeKiboLeaderboardUser(uid);
-    return { ok: true, migrated: true, imported, legacyTrust: "unverified-client-origin" };
-  } catch (error) {
-    await markerRef.set({ uid, status: "failed", failedAt: FieldValue.serverTimestamp(), errorCode: error.code || "internal" }, { merge: true });
-    if (error instanceof HttpsError) throw error;
-    console.error("KIBO legacy progress migration failed", error);
-    throw new HttpsError("internal", "Eski progress migratsiyasida server xatoligi yuz berdi.");
-  }
-});
-
-async function recomputeKiboLeaderboardUser(uid) {
-  const db = getFirestore();
-  const now = Date.now();
-  const ledger = db.collection(KIBO_LEDGER).doc(uid).collection("words");
-  const [activeSnap, recentSnap] = await Promise.all([
-    ledger.where("dueAt", ">", new Date(now)).get(),
-    ledger.where("lastReviewedAt", ">=", new Date(now - 7 * 86400000)).get()
-  ]);
-  const weekCount = recentSnap.docs.filter(doc => {
-    const due = doc.data().dueAt?.toMillis?.() ?? new Date(doc.data().dueAt || 0).getTime();
-    return due > now;
-  }).length;
-  const userSnap = await db.collection("users").doc(uid).get();
-  const user = userSnap.exists ? userSnap.data() : {};
-  await db.collection(KIBO_LEADERBOARD).doc(uid).set({
-    uid,
-    displayName: kiboSafeText(user.profileName || user.accountDisplayName, 80, "KIBO o‘quvchisi"),
-    photoURL: typeof user.profileImage === "string" && user.profileImage.length <= 500000 ? user.profileImage : null,
-    allCount: activeSnap.size,
-    weekCount,
-    updatedAt: FieldValue.serverTimestamp()
-  }, { merge: true });
-  return { allCount: activeSnap.size, weekCount };
-}
-
-// Called only after the existing spaced-repetition registrar records a word.
-// The server assigns timestamps, deduplicates by deterministic hash and
-// throttles requests. It does not accept client-supplied counters/timestamps.
-exports.recordKiboLearnedWord = onCall({ maxInstances: 10 }, async (request) => {
-  const uid = await requireKiboUser(request);
-  const data = request.data || {};
-  if (!validKiboWord(data)) throw new HttpsError("invalid-argument", "Lug‘at ma’lumoti noto‘g‘ri.");
-  const ko = data.ko.trim(), uz = data.uz.trim();
-  const source = kiboSafeText(data.source || data.sectionTitle, 240, "KIBO");
-  const hash = kiboWordHash(ko, uz, source);
-  const db = getFirestore();
-  const rateRef = db.collection("kiboLeaderboardRateLimits").doc(uid);
-  const wordRef = db.collection(KIBO_LEDGER).doc(uid).collection("words").doc(hash);
-  const now = Date.now();
-  const result = await db.runTransaction(async (tx) => {
-    const [rateSnap, wordSnap] = await Promise.all([tx.get(rateRef), tx.get(wordRef)]);
-    const rate = rateSnap.exists ? rateSnap.data() : {};
-    const windowStart = Number(rate.windowStart || 0);
-    const count = windowStart > now - 60000 ? Number(rate.count || 0) : 0;
-    if (count >= 120) throw new HttpsError("resource-exhausted", "Juda ko‘p so‘rov yuborildi. Bir ozdan keyin urinib ko‘ring.");
-    tx.set(rateRef, { windowStart: windowStart > now - 60000 ? windowStart : now, count: count + 1, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    if (wordSnap.exists) {
-      const prior = wordSnap.data();
-      const step = Math.min(5, Math.max(0, Number(prior.reviewStep || 0) + 1));
-      const intervals = [1, 3, 7, 14, 21, 30];
-      tx.update(wordRef, { reviewStep: step, lastReviewedAt: FieldValue.serverTimestamp(), dueAt: new Date(now + intervals[step] * 86400000), lastSourceType: "server-event" });
-      return { created: false, reviewed: true };
-    }
-    tx.create(wordRef, {
-      uid, wordHash: hash, ko, uz, source,
-      sectionTitle: kiboSafeText(data.sectionTitle, 240), reviewStep: 0,
-      learnedAt: FieldValue.serverTimestamp(), lastReviewedAt: FieldValue.serverTimestamp(), dueAt: new Date(now + 86400000),
-      sourceType: "server-event"
-    });
-    return { created: true, reviewed: false };
-  });
-  if (result.created || result.reviewed) await recomputeKiboLeaderboardUser(uid);
-  return { ok: true, created: result.created };
-});
-
-// Keep public leaderboard identity fields synchronized from the user's own
-// profile document; clients never write leaderboard documents directly.
-exports.updateKiboLeaderboardProfile = onCall({ maxInstances: 10 }, async (request) => {
-  const uid = await requireKiboUser(request);
-  const db = getFirestore();
-  const snap = await db.collection("users").doc(uid).get();
-  const user = snap.exists ? snap.data() : {};
-  const ref = db.collection(KIBO_LEADERBOARD).doc(uid);
-  await ref.set({
-    uid,
-    displayName: kiboSafeText(user.profileName || user.accountDisplayName || request.auth.token.name, 80, "KIBO o‘quvchisi"),
-    photoURL: typeof user.profileImage === "string" && user.profileImage.length <= 500000 ? user.profileImage : null,
-    updatedAt: FieldValue.serverTimestamp()
-  }, { merge: true });
-  return { ok: true };
-});
-
-// Recalculate rolling 7-day counts so old events naturally expire from the
-// weekly leaderboard. Deploying this scheduler is separate from static tests.
-exports.refreshKiboWeeklyLeaderboard = onSchedule("every 24 hours", async () => {
-  const snap = await getFirestore().collection(KIBO_LEADERBOARD).get();
-  for (const doc of snap.docs) await recomputeKiboLeaderboardUser(doc.id);
 });

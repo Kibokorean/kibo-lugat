@@ -227,42 +227,30 @@ service cloud.firestore {
     // YONSEI 3 - DICTATION SUBMISSIONS
     // ==========================================
 
+    // ==========================================
+    // YONSEI 3 — SERVER-MANAGED DICTATION SUBMISSIONS
+    // ==========================================
+
+    // Client to'g'ridan-to'g'ri topshiriqni o'qimaydi/yozmaydi.
+    // O'quvchi progress va o'qituvchi review ma'lumotlarini callable
+    // Functions orqali oladi. Admin SDK Firestore Rules'ni chetlab o'tadi.
     match /yonsei3DictationSubmissions/{submissionId} {
+      allow read, create, update, delete: if false;
 
-      // O‘quvchi faqat o‘z diktantlarini ko‘radi.
-      // Faol o‘qituvchi barcha diktantlarni ko‘radi.
-      allow read: if signedIn()
-        && (
-          resource.data.uid == request.auth.uid
-          || activeTeacher()
-        );
-
-      // Diktant hujjatlarini faqat Firebase Admin SDK
-      // orqali server funksiyalari yaratadi va o‘zgartiradi.
-      allow create, update, delete: if false;
-
-      // ========================================
-      // DICTATION ATTEMPTS HISTORY
-      // ========================================
-
+      // Har bir qayta topshirish alohida urinish sifatida saqlanadi.
+      // Urinishlar tarixi ham faqat Admin SDK orqali boshqariladi.
       match /attempts/{attemptId} {
-
-        // O‘quvchi o‘z tarixini ko‘radi.
-        // Faol o‘qituvchi barcha tarixni ko‘radi.
-        allow read: if signedIn()
-          && exists(
-            /databases/$(database)/documents/yonsei3DictationSubmissions/$(submissionId)
-          )
-          && (
-            get(
-              /databases/$(database)/documents/yonsei3DictationSubmissions/$(submissionId)
-            ).data.uid == request.auth.uid
-            || activeTeacher()
-          );
-
-        // Tarix faqat server tomonidan boshqariladi.
-        allow create, update, delete: if false;
+        allow read, create, update, delete: if false;
       }
+    }
+
+    // ==========================================
+    // YONSEI 3 — SERVER-OWNED WRITTEN TEST SESSIONS
+    // ==========================================
+
+    // Javob kaliti va test sessiyalari faqat callable Functions/Admin SDK uchun.
+    match /yonsei3WrittenTestSessions/{sessionId} {
+      allow read, create, update, delete: if false;
     }
 
     // ==========================================
