@@ -6885,33 +6885,30 @@ body:not(.night) #k2LessonModal .kc-error{
 <script id="kibo-k1-k2-back-to-previous-page-fix">
 (() => {
   'use strict';
-  function returnToPreviousPage(courseId) {
-    const catalog = document.getElementById(courseId === 'k1' ? 'k1TopicCatalog' : 'k2TopicCatalog');
-    const landing = document.getElementById('kcBookLanding');
-    // If this course was reached from another page on this site, return to that page.
-    let sameSiteReferrer = false;
-    try {
-      sameSiteReferrer = !!document.referrer &&
-        new URL(document.referrer).origin === window.location.origin;
-    } catch (_) {}
-    if (sameSiteReferrer && window.history.length > 1) {
-      window.history.back();
-      return;
-    }
-    // Safe fallback for direct opens / refreshed tabs: return to the course list.
-    if (catalog) catalog.hidden = true;
-    if (landing) landing.hidden = false;
-    window.scrollTo({ top: 0, behavior: 'auto' });
-  }
-
   document.addEventListener('click', function (event) {
     const button = event.target && event.target.closest
       ? event.target.closest('#k1BackBook, #k2BackBook')
       : null;
     if (!button) return;
+
+    // These buttons must return to the in-app "Kurslar" list,
+    // not the browser's previous history entry.
     event.preventDefault();
     event.stopImmediatePropagation();
-    returnToPreviousPage(button.id === 'k1BackBook' ? 'k1' : 'k2');
+
+    const k1Catalog = document.getElementById('k1TopicCatalog');
+    const k2Catalog = document.getElementById('k2TopicCatalog');
+    const bookLanding = document.getElementById('kcBookLanding');
+
+    if (k1Catalog) k1Catalog.hidden = true;
+    if (k2Catalog) k2Catalog.hidden = true;
+    if (bookLanding) bookLanding.hidden = false;
+
+    // Keep the course area selected and restore its scroll position.
+    document.querySelectorAll('[data-nav]').forEach(nav => {
+      nav.classList.toggle('active', nav.dataset.nav === 'course');
+    });
+    window.scrollTo({ top: 0, behavior: 'auto' });
   }, true);
 })();
 </script>
