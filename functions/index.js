@@ -1,7 +1,7 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { setGlobalOptions } = require("firebase-functions/v2");
 const { initializeApp } = require("firebase-admin/app");
-const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+const { getFirestore, FieldValue, FieldPath } = require("firebase-admin/firestore");
 const { getStorage } = require("firebase-admin/storage");
 const { randomUUID } = require("crypto");
 const YONSEI3_ANSWER_KEY = require("./yonsei3-answer-key.json");
@@ -475,4 +475,121 @@ exports.reviewYonsei3Submission = onCall(async (request) => {
       reviewedAt: FieldValue.serverTimestamp(), teacherComment });
   });
   return { ok: true, submissionId, status: decision };
+});
+
+
+// Teacher-only paginated student statistics. Admin SDK reads bypass client rules;
+// the callable still enforces the active teacher profile and returns only summary fields.
+exports.getTeacherStudentStats = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError("unauthenticated", "Avval hisobingizga kiring.");
+  await requireActiveTeacher(request.auth.uid);
+  const db = getFirestore();
+  const rawSize = Number(request.data?.pageSize || 50);
+  const pageSize = Math.max(1, Math.min(50, Number.isInteger(rawSize) ? rawSize : 50));
+  const cursor = typeof request.data?.cursor === "string" ? request.data.cursor : "";
+  if (cursor.length > 150 || cursor.includes("/")) throw new HttpsError("invalid-argument", "Sahifa belgisi noto'g'ri.");
+  let query = db.collection("users").orderBy(FieldPath.documentId()).limit(pageSize);
+  if (cursor) {
+    const cursorDoc = await db.collection("users").doc(cursor).get();
+    if (cursorDoc.exists) query = query.startAfter(cursorDoc);
+  }
+  const [snap, countSnap] = await Promise.all([query.get(), db.collection("users").count().get()]);
+  const now = Date.now();
+  const items = snap.docs.map((doc) => {
+    const d = doc.data() || {};
+    const p = d.progress && typeof d.progress === "object" ? d.progress : {};
+    const review = p.kibo_spaced_review_v1 && typeof p.kibo_spaced_review_v1 === "object" ? p.kibo_spaced_review_v1 : {};
+    const entries = Object.values(review).filter((x) => x && typeof x === "object");
+    const learnedWords = entries.length;
+    const dueWords = entries.filter((x) => Number(x.due || 0) > 0 && Number(x.due) <= now).length;
+    const stamp = (v) => v && typeof v.toMillis === "function" ? v.toMillis() : (typeof v === "number" ? v : null);
+    return { uid: doc.id, email: String(d.accountEmail || "").slice(0, 254),
+      displayName: String(d.accountDisplayName || "").slice(0, 100), learnedWords, dueWords,
+      lastActiveAt: stamp(d.updatedAt), registeredAt: stamp(d.registeredAt) };
+  });
+  return { items, totalCount: Number(countSnap.data().count || 0),
+    nextCursor: snap.size === pageSize ? snap.docs[snap.docs.length - 1].id : null };
+});
+
+
+// Student-owned course progress. Students can write only their own bounded summary;
+// teacher reads are restricted to students whose kiboCourseAccess flag is true.
+const COURSE_PROGRESS_CONFIG = {
+  kiboKorean1: { label: "KIBO Korean 1", topicCount: 20 },
+  kiboKorean2: { label: "KIBO Korean 2", topicCount: 18 },
+  yonsei3: { label: "Yonsei 3", topicCount: 30 }
+};
+function cleanProgressPayload(value, config) {
+  const p = value && typeof value === "object" ? value : {};
+  const completedTopics = [...new Set((Array.isArray(p.completedTopics) ? p.completedTopics : [])
+    .map(Number).filter(n => Number.isInteger(n) && n >= 1 && n <= config.topicCount))].sort((a,b)=>a-b);
+  let activeTopic = null;
+  if (p.activeTopic && typeof p.activeTopic === "object") {
+    const number = Number(p.activeTopic.number);
+    if (Number.isInteger(number) && number >= 1 && number <= config.topicCount) {
+      activeTopic = { number, title: String(p.activeTopic.title || "").slice(0,160), status: "in_progress" };
+    }
+  }
+  const topicCatalog = (Array.isArray(p.topicCatalog) ? p.topicCatalog : []).slice(0, config.topicCount).map(t => ({
+    number: Number(t?.number), title: String(t?.title || "").slice(0,160)
+  })).filter(t => Number.isInteger(t.number) && t.number >= 1 && t.number <= config.topicCount && t.title);
+  const repeatWords = (Array.isArray(p.repeatWords) ? p.repeatWords : []).slice(0,300).map(w => ({
+    ko: String(w?.ko || "").slice(0,120), uz: String(w?.uz || "").slice(0,240),
+    topicNumber: Math.max(0, Math.min(config.topicCount, Number(w?.topicNumber) || 0)),
+    topicTitle: String(w?.topicTitle || "").slice(0,160)
+  })).filter(w => w.ko && w.uz);
+  return { completedTopics, topicCatalog, activeTopic, repeatWords, clientUpdatedAt: Number(p.updatedAt) || Date.now() };
+}
+exports.saveStudentCourseProgress = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError("unauthenticated", "Avval hisobingizga kiring.");
+  const courseKey = String(request.data?.courseKey || "");
+  const config = COURSE_PROGRESS_CONFIG[courseKey];
+  if (!config) throw new HttpsError("invalid-argument", "Kurs turi noto'g'ri.");
+  const progress = cleanProgressPayload(request.data?.progress, config);
+  await getFirestore().collection("kiboStudentCourseProgress").doc(request.auth.uid).set({
+    uid: request.auth.uid,
+    courses: { [courseKey]: { ...progress, updatedAt: FieldValue.serverTimestamp() } }
+  }, { merge: true });
+  return { ok: true };
+});
+exports.getTeacherCourseProgress = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError("unauthenticated", "Avval hisobingizga kiring.");
+  await requireActiveTeacher(request.auth.uid);
+  const courseKey = String(request.data?.courseKey || "");
+  const config = COURSE_PROGRESS_CONFIG[courseKey];
+  if (!config) throw new HttpsError("invalid-argument", "Kurs turi noto'g'ri.");
+  const db = getFirestore();
+  const accessSnap = await db.collection("kiboCourseAccess").get();
+  const permitted = accessSnap.docs.filter(doc => doc.data()?.[courseKey] === true);
+  const items = await Promise.all(permitted.map(async doc => {
+    const uid = doc.id, access = doc.data();
+    const [progressSnap, userSnap, yonseiSnap] = await Promise.all([
+      db.collection("kiboStudentCourseProgress").doc(uid).get(),
+      db.collection("users").doc(uid).get(),
+      courseKey === "yonsei3" ? db.collection("yonsei3DictationSubmissions").where("uid", "==", uid).where("course", "==", "yonsei3").get() : Promise.resolve(null)
+    ]);
+    const raw = progressSnap.exists ? (progressSnap.data()?.courses?.[courseKey] || {}) : {};
+    const profile = userSnap.exists ? userSnap.data() : {};
+    if (courseKey === "yonsei3" && yonseiSnap) {
+      const statusByTopic = new Map();
+      yonseiSnap.docs.forEach(d => { const n = Number(d.data().topicNumber); if (Number.isInteger(n) && n >= 1 && n <= 30) statusByTopic.set(n, d.data().status); });
+      const serverCompleted = [];
+      for (let n = 1; n <= 30; n++) { if (!["submitted", "approved"].includes(statusByTopic.get(n))) break; serverCompleted.push(n); }
+      raw.completedTopics = serverCompleted;
+      raw.topicCatalog = Object.entries(TOPIC_TITLES).map(([number,title]) => ({ number: Number(number), title }));
+    }
+    let authUser = null;
+    try { authUser = await require("firebase-admin/auth").getAuth().getUser(uid); } catch (_) {}
+    const completedTopics = Array.isArray(raw.completedTopics) ? raw.completedTopics : [];
+    const repeatWords = Array.isArray(raw.repeatWords) ? raw.repeatWords : [];
+    const ts = raw.updatedAt?.toMillis ? raw.updatedAt.toMillis() : Number(raw.clientUpdatedAt) || null;
+    return {
+      uid, email: String(access.email || authUser?.email || profile.accountEmail || ""),
+      displayName: String(profile.displayName || profile.name || authUser?.displayName || access.email || uid).slice(0,120),
+      topicCount: config.topicCount,
+      progress: { completedTopics, topicCatalog: Array.isArray(raw.topicCatalog) ? raw.topicCatalog : [], activeTopic: raw.activeTopic || null, repeatWords, updatedAt: ts }
+    };
+  }));
+  items.sort((a,b) => (a.displayName || "").localeCompare(b.displayName || "", "uz"));
+  return { courseKey, courseLabel: config.label, items };
 });
