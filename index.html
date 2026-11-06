@@ -5975,7 +5975,9 @@ body,.side,.study,.right-panel,.picker-card,#kiboSideNav,#kiboMobileNav,.flash-f
 <script id="kibo-course-progress-sync">
 (()=>{'use strict';
  const COURSE_LABELS={kiboKorean1:'KIBO Korean 1',kiboKorean2:'KIBO Korean 2',yonsei3:'Yonsei 3'};
- let pending=Object.create(null);
+ // K1/K2 cloud restore must finish before any local/default state is allowed to sync.
+ window.kiboCourseProgressReady={kiboKorean1:false,kiboKorean2:false,yonsei3:true};
+ let pending=Object.create(null),held=Object.create(null);
  function dueWords(courseKey){
    try{
      const data=JSON.parse(localStorage.getItem('kibo_spaced_review_v1')||'{}');
@@ -5987,6 +5989,9 @@ body,.side,.study,.right-panel,.picker-card,#kiboSideNav,#kiboMobileNav,.flash-f
  }
  window.kiboSyncCourseProgress=function(courseKey,payload){
    if(!COURSE_LABELS[courseKey]||!window.firebase||!firebase.auth||!firebase.auth().currentUser||!firebase.app().functions)return;
+   if(window.kiboCourseProgressReady && window.kiboCourseProgressReady[courseKey]===false){
+     held[courseKey]=payload&&typeof payload==='object'?{...payload}:{};return;
+   }
    const safe=payload&&typeof payload==='object'?{...payload}:{};
    const combined=[...(Array.isArray(safe.repeatWords)?safe.repeatWords:[]),...dueWords(courseKey)];
    const seen=new Set();safe.repeatWords=combined.filter(w=>{const k=String(w.ko||'')+'|'+String(w.uz||'');if(!w.ko||seen.has(k))return false;seen.add(k);return true;}).slice(0,300);
@@ -6301,6 +6306,8 @@ async function restoreK1CloudProgress(uid){
   progress=mergeK1Progress(load(),cloudLocal);
   try{localStorage.setItem(storageKey(),JSON.stringify(progress));}catch(_e){}
   renderProgress();
+  // Only now is it safe to write merged progress back to Firestore.
+  if(window.kiboCourseProgressReady)window.kiboCourseProgressReady.kiboKorean1=true;
   if(window.kiboSyncCourseProgress)window.kiboSyncCourseProgress('kiboKorean1',{
    completedTopics:progress.completed,
    topicCatalog:TOPICS.map(t=>({number:t.n,title:t.title})),
@@ -6531,6 +6538,8 @@ async function restoreK2CloudProgress(uid){
   progress=mergeK2Progress(load(),cloudLocal);
   try{localStorage.setItem(storageKey(),JSON.stringify(progress));}catch(_e){}
   renderProgress();
+  // Only now is it safe to write merged progress back to Firestore.
+  if(window.kiboCourseProgressReady)window.kiboCourseProgressReady.kiboKorean2=true;
   if(window.kiboSyncCourseProgress)window.kiboSyncCourseProgress('kiboKorean2',{
    completedTopics:progress.completed,
    topicCatalog:TOPICS.map(t=>({number:t.n,title:t.title})),
