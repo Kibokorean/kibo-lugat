@@ -6885,39 +6885,57 @@ body:not(.night) #k2LessonModal .kc-error{
 <script id="kibo-k1-k2-back-to-previous-page-fix">
 (() => {
   'use strict';
-  document.addEventListener('click', function (event) {
+
+  function returnToCoursePicker() {
+    const root = document.getElementById('kiboCourseView');
+    const landing = document.getElementById('kcBookLanding');
+    if (!root || !landing) return;
+
+    // Close any KIBO lesson modal and clear its scroll lock.
+    ['kcLessonModal', 'k1LessonModal', 'k2LessonModal'].forEach(id => {
+      const modal = document.getElementById(id);
+      if (modal) {
+        modal.hidden = true;
+        modal.classList.remove('is-open');
+      }
+    });
+    document.body.style.overflow = '';
+
+    // Restore the course-selection cards (KIBO Korean 1 / KIBO Korean 2).
+    root.hidden = false;
+    root.style.display = 'block';
+    root.classList.remove('kc-catalog-only');
+
+    landing.hidden = false;
+    landing.style.removeProperty('display');
+
+    ['kcTopicCatalog', 'k1TopicCatalog', 'k2TopicCatalog'].forEach(id => {
+      const view = document.getElementById(id);
+      if (view) {
+        view.hidden = true;
+        view.style.removeProperty('display');
+      }
+    });
+
+    document.body.classList.add('kc-course-open');
+
+    document.querySelectorAll('#kiboSideNav .nav-link, #kiboMobileNav .nav-link')
+      .forEach(nav => nav.classList.toggle('active', nav.dataset.nav === 'course'));
+
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }
+
+  // Capture phase prevents older/duplicate handlers from overriding this route.
+  document.addEventListener('click', event => {
     const button = event.target && event.target.closest
       ? event.target.closest('#k1BackBook, #k2BackBook')
       : null;
     if (!button) return;
+
     event.preventDefault();
+    event.stopPropagation();
     event.stopImmediatePropagation();
-
-    // Re-open the complete course landing container through its own
-    // initializer; toggling only the inner list can leave the page blank.
-    const isK1 = button.id === 'k1BackBook';
-    const reopen = isK1
-      ? window.kiboOpenKorean1Course
-      : window.kiboOpenKorean2Course;
-
-    if (typeof reopen === 'function') {
-      reopen();
-    } else {
-      // Fallback if the course initializer is unavailable.
-      const root = document.querySelector('.kc-shell')?.parentElement;
-      const landing = document.getElementById('kcBookLanding');
-      const k1 = document.getElementById('k1TopicCatalog');
-      const k2 = document.getElementById('k2TopicCatalog');
-      if (root) { root.hidden = false; root.style.display = 'block'; }
-      if (landing) landing.hidden = false;
-      if (k1) k1.hidden = true;
-      if (k2) k2.hidden = true;
-      document.body.classList.add('kc-course-open');
-    }
-    document.querySelectorAll('[data-nav]').forEach(nav => {
-      nav.classList.toggle('active', nav.dataset.nav === 'course');
-    });
-    window.scrollTo({ top: 0, behavior: 'auto' });
+    returnToCoursePicker();
   }, true);
 })();
 </script>
