@@ -1905,7 +1905,16 @@ body.night #k1TopicCatalog .kc-topic:disabled .kc-topic-status,body.dark #k1Topi
 .kibo-course-progress-detail h3{margin:0 0 10px}.kcp-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}.kcp-summary>div{padding:11px;border:1px solid var(--line);border-radius:11px}.kcp-summary b{display:block;font-size:20px}.kcp-summary small{color:var(--muted)}
 .kcp-topic{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.kcp-topic:last-child{border-bottom:0}.kcp-repeat{padding:9px 11px;margin:6px 0;border-radius:10px;background:var(--panel);border:1px solid var(--line)}
 @media(max-width:520px){.kcp-summary{grid-template-columns:1fr 1fr}.kibo-course-progress-student{align-items:flex-start;flex-direction:column}}
+
+/* KIBO COURSE ACCESS FIX: CSS display:flex must never override hidden cards. */
+.kc-book[hidden],
+[data-kibo-course-card][hidden] {
+  display: none !important;
+}
 </style>
+
+
+
 </head>
 <body>
 <aside aria-label="Asosiy menyu" id="kiboSideNav">
@@ -5137,9 +5146,9 @@ body.night .kibo-stat-card,body.night .kibo-stats-panel,body.night .kibo-stats-r
    if(local&&cloud&&typeof local==='object'&&typeof cloud==='object'&&!Array.isArray(local)&&!Array.isArray(cloud)){const out={...cloud};for(const k of Object.keys(local))out[k]=k in cloud?mergeValue(local[k],cloud[k]):local[k];return out}
    return local===undefined?cloud:local;
  };
- const cloudRead=async()=>{const snap=await db.collection('users').doc(user.uid).get();const data=snap.exists?snap.data():{};return {exists:snap.exists,progress:data.progress&&typeof data.progress==='object'?data.progress:{}}};
+ const cloudRead=async()=>{const snap=await db.collection('users').doc(user.uid).get();const data=snap.exists?snap.data():{};return {exists:snap.exists,accountEmail:(data.accountEmail||'').toString().trim().toLowerCase(),progress:data.progress&&typeof data.progress==='object'?data.progress:{}}};
  const cloudWrite=async payload=>{await db.collection('users').doc(user.uid).set({...payload,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true})};
- const sync=async()=>{if(!auth||!user||syncBusy)return;syncBusy=true;setBusy(true);try{const local=readLocal(),cloudState=await cloudRead(),cloud=cloudState.progress,merged={...cloud};for(const key of PROGRESS_KEYS){if(key in local)merged[key]=key in cloud?mergeValue(local[key],cloud[key]):local[key];else if(key in cloud)merged[key]=cloud[key]}for(const key of PROGRESS_KEYS){if(key in merged){try{localStorage.setItem(key,JSON.stringify(merged[key]))}catch(e){console.warn('KIBO local progress restore skipped',key,e)}}}const progressChanged=JSON.stringify(merged)!==JSON.stringify(cloud);if(!cloudState.exists){await cloudWrite({progress:merged,accountEmail:user.email||null,accountDisplayName:user.displayName||null,registeredAt:firebase.firestore.FieldValue.serverTimestamp()})}else if(progressChanged){await cloudWrite({progress:merged})}setStatus('Lug‘at progressi sinxronlandi · '+new Date().toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'}),'ok');try{window.kiboRenderStatistics?.()}catch(e){}}catch(e){console.error('KIBO Firebase sync failed',e);setStatus('Sinxronlash amalga oshmadi: '+(e.code||e.message||'Firebase xatosi')+'. Mahalliy progress saqlanib qoldi. Firestore qoidalarini tekshir.','error')}finally{syncBusy=false;setBusy(false)}};
+ const sync=async()=>{if(!auth||!user||syncBusy)return;syncBusy=true;setBusy(true);try{const local=readLocal(),cloudState=await cloudRead(),cloud=cloudState.progress,merged={...cloud};for(const key of PROGRESS_KEYS){if(key in local)merged[key]=key in cloud?mergeValue(local[key],cloud[key]):local[key];else if(key in cloud)merged[key]=cloud[key]}for(const key of PROGRESS_KEYS){if(key in merged){try{localStorage.setItem(key,JSON.stringify(merged[key]))}catch(e){console.warn('KIBO local progress restore skipped',key,e)}}}const progressChanged=JSON.stringify(merged)!==JSON.stringify(cloud);if(!cloudState.exists){await cloudWrite({progress:merged,accountEmail:(user.email||'').trim().toLowerCase()||null,accountDisplayName:user.displayName||null,registeredAt:firebase.firestore.FieldValue.serverTimestamp()})}else if(progressChanged||((user.email||'').trim().toLowerCase()&&cloudState.accountEmail!==(user.email||'').trim().toLowerCase())){await cloudWrite({...(progressChanged?{progress:merged}:{}),accountEmail:(user.email||'').trim().toLowerCase()})}setStatus('Lug‘at progressi sinxronlandi · '+new Date().toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'}),'ok');try{window.kiboRenderStatistics?.()}catch(e){}}catch(e){console.error('KIBO Firebase sync failed',e);setStatus('Sinxronlash amalga oshmadi: '+(e.code||e.message||'Firebase xatosi')+'. Mahalliy progress saqlanib qoldi. Firestore qoidalarini tekshir.','error')}finally{syncBusy=false;setBusy(false)}};
  const queueSync=()=>{if(!user||syncBusy)return;clearTimeout(syncTimer);syncTimer=setTimeout(()=>sync(),1600)};
  const updateHomeForSession=current=>{const signedIn=!!current;document.body.classList.remove('kibo-guest-session');const guest=$('kiboHomeGuest'),home=$('kiboHomeSummary');if(guest)guest.hidden=signedIn;if(home)home.style.display='block';};
  const showSession=async current=>{user=current||null;updateHomeForSession(user);$('kiboCloudSignedOut').hidden=!!user;$('kiboCloudSignedIn').hidden=!user;$('kibo-cloud-auth').classList.toggle('is-signed-in',!!user);if(user){$('kiboCloudUser').textContent='Kirish: '+(user.email||user.displayName||'KIBO foydalanuvchisi');setStatus('Hisob ulandi. Lug‘at progressi tekshirilmoqda…');await sync()}else setStatus('Google orqali kiring yoki yangi hisob yarating.')};
@@ -6849,6 +6858,11 @@ body:not(.night) #k2LessonModal .kc-error{
  if(!root||!landing)return;
  const catalogs=['kcTopicCatalog','k1TopicCatalog','k2TopicCatalog'];
  function openCatalog(id){
+  const courseKey=id==='kcTopicCatalog'?'yonsei3':id==='k1TopicCatalog'?'kiboKorean1':id==='k2TopicCatalog'?'kiboKorean2':null;
+  if(courseKey&&typeof window.kiboCanOpenCourse==='function'&&!window.kiboCanOpenCourse(courseKey)){
+   if(typeof window.kiboDenyCourseAccess==='function')window.kiboDenyCourseAccess(courseKey);
+   return;
+  }
   root.hidden=false;root.style.display='block';
   document.body.classList.add('kc-course-open');
   landing.hidden=true;
@@ -7268,7 +7282,9 @@ body.night #kiboTelegramGate .kibo-tg-dialog,body.dark #kiboTelegramGate .kibo-t
       const key=card.dataset.kiboCourseCard;
       const allowed=isTeacher||access[key]===true;
       card.hidden=!allowed;
+      card.style.setProperty('display', allowed ? 'flex' : 'none', 'important');
       card.setAttribute('aria-hidden',String(!allowed));
+      card.setAttribute('data-access-allowed',String(allowed));
     });
     const any=isTeacher||COURSE_KEYS.some(k=>access[k]);
     showNav(any);
@@ -7278,6 +7294,7 @@ body.night #kiboTelegramGate .kibo-tg-dialog,body.dark #kiboTelegramGate .kibo-t
     }
   }
   function canOpen(key){return !!currentUser&&accessReady&&(isTeacher||access[key]===true);}
+  window.kiboCanOpenCourse=canOpen;
   function deny(key){
     const label=COURSE_LABELS[key]||'Bu kurs';
     let box=$('kiboCourseAccessDeniedNotice');
@@ -7285,6 +7302,7 @@ body.night #kiboTelegramGate .kibo-tg-dialog,body.dark #kiboTelegramGate .kibo-t
     box.textContent=!currentUser?'Kursga kirish uchun avval hisobingizga kiring.':!accessReady?'Kurs ruxsati tekshirilmoqda. Biroz kuting.':label+' uchun sizga ruxsat berilmagan.';
     box.hidden=false;clearTimeout(box._hideTimer);box._hideTimer=setTimeout(()=>{box.hidden=true;},3800);
   }
+  window.kiboDenyCourseAccess=deny;
   function guardClick(event){
     const button=event.target?.closest?.('#kcOpenBook,#k1OpenBook,#k2OpenBook');
     if(!button)return;
@@ -7314,9 +7332,13 @@ body.night #kiboTelegramGate .kibo-tg-dialog,body.dark #kiboTelegramGate .kibo-t
     if(!isTeacher||!db)throw new Error('O‘qituvchi ruxsati tasdiqlanmagan.');
     const email=($('kiboCourseStudentEmail')?.value||'').trim().toLowerCase();
     if(!email)throw new Error('O‘quvchi emailini kiriting.');
-    const snap=await db.collection('users').where('accountEmail','==',email).limit(1).get();
-    if(snap.empty)throw new Error('Bu email bilan ro‘yxatdan o‘tgan o‘quvchi topilmadi. O‘quvchi avval saytga Google orqali kirishi kerak.');
-    return {uid:snap.docs[0].id,email};
+    let snap=await db.collection('users').where('accountEmail','==',email).limit(1).get();
+    if(snap.empty) snap=await db.collection('users').where('email','==',email).limit(1).get();
+    if(snap.empty)throw new Error('Bu email bilan ro‘yxatdan o‘tgan o‘quvchi topilmadi. O‘quvchi avval saytga Google orqali kirishi va profil sinxronlanishi kerak.');
+    const uid=snap.docs[0].id;
+    const authEmail=(snap.docs[0].data().accountEmail||snap.docs[0].data().email||email).toString().trim().toLowerCase();
+    if(authEmail!==email)throw new Error('Topilgan foydalanuvchining emaili mos kelmadi. Ruxsat berilmadi.');
+    return {uid,email};
   }
   async function changeSelected(grant){
     try{
