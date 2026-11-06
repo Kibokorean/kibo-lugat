@@ -6012,6 +6012,38 @@ function freshProgress(){return {completed:[],dictationSubmitted:[],active:null,
 function loadProgress(){try{let raw=localStorage.getItem(storageKey());if(!raw&&getUserKey()!=='local'){raw=localStorage.getItem('kibo_yonsei3_learning_v1_local');if(raw)localStorage.setItem(storageKey(),raw);}const x=JSON.parse(raw||'null');return x&&Array.isArray(x.completed)?{completed:x.completed,dictationSubmitted:Array.isArray(x.dictationSubmitted)?x.dictationSubmitted:[],active:x.active||null,reviewRegistered:Array.isArray(x.reviewRegistered)?x.reviewRegistered:[],rejected:[]}:freshProgress();}catch(e){return freshProgress();}}
 function isTopicComplete(n){return progress.completed.includes(Number(n))&&progress.dictationSubmitted.includes(Number(n));}
 let progress=loadProgress(),writtenRetryIndices=null;
+function mergeYonseiProgress(a,b){
+ const x=a&&typeof a==='object'?a:freshProgress(),y=b&&typeof b==='object'?b:freshProgress();
+ return {
+  completed:[...new Set([...(Array.isArray(x.completed)?x.completed:[]),...(Array.isArray(y.completed)?y.completed:[])].map(Number))],
+  dictationSubmitted:[...new Set([...(Array.isArray(x.dictationSubmitted)?x.dictationSubmitted:[]),...(Array.isArray(y.dictationSubmitted)?y.dictationSubmitted:[])].map(Number))],
+  active:y.active||x.active||null,
+  reviewRegistered:[...new Set([...(Array.isArray(x.reviewRegistered)?x.reviewRegistered:[]),...(Array.isArray(y.reviewRegistered)?y.reviewRegistered:[])])],
+  rejected:[]
+ };
+}
+function migrateYonseiProgress(uid){
+ if(!uid||uid==='local')return;
+ try{
+  const localRaw=localStorage.getItem('kibo_yonsei3_learning_v1_local');
+  const userKeyName='kibo_yonsei3_learning_v1_'+uid;
+  const userRaw=localStorage.getItem(userKeyName);
+  if(localRaw){
+   const localData=JSON.parse(localRaw),userData=JSON.parse(userRaw||'null');
+   const merged=mergeYonseiProgress(localData,userData);
+   localStorage.setItem(userKeyName,JSON.stringify(merged));
+  }
+  progress=loadProgress();
+  if(typeof renderProgress==='function')renderProgress();
+ }catch(e){console.warn('Yonsei progress migration failed',e);}
+}
+try{
+ const auth=window.firebase&&firebase.auth&&firebase.auth();
+ if(auth&&typeof auth.onAuthStateChanged==='function'){
+  auth.onAuthStateChanged(user=>{if(user&&user.uid)migrateYonseiProgress(user.uid);});
+ }
+}catch(e){console.warn('Yonsei auth progress listener unavailable',e);}
+
 function save(){try{localStorage.setItem(storageKey(),JSON.stringify(progress));}catch(e){console.warn('Yonsei progress save failed',e);}if(window.kiboSyncCourseProgress)window.kiboSyncCourseProgress('yonsei3',{completedTopics:progress.completed,topicCatalog:TOPICS.map(t=>({number:t.n,title:t.title})),activeTopic:progress.active&&currentTopic?{number:currentTopic.n,title:currentTopic.title,status:progress.active.phase||'in_progress'}:null,repeatWords:(window.kiboYonsei3RepeatWords||[]),updatedAt:Date.now()});}
 function normalizeAnswer(v){return String(v||'').normalize('NFC').toLowerCase().replace(/[\u200b\u200c\u200d]/g,'').replace(/\s+/g,' ').trim();}
 function escapeHTML(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -6233,6 +6265,55 @@ const storageKey=()=>`kibo_korean1_progress_v1_${userKey()}`;
 const fresh=()=>({completed:[],reviewRegistered:[],activeTopic:null});
 function load(){try{const v=JSON.parse(localStorage.getItem(storageKey())||'null');return v&&Array.isArray(v.completed)?{completed:v.completed.map(Number),reviewRegistered:Array.isArray(v.reviewRegistered)?v.reviewRegistered:[],activeTopic:v.activeTopic&&typeof v.activeTopic==='object'?v.activeTopic:null}:fresh();}catch(e){return fresh();}}
 let progress=load();
+function mergeK1Progress(a,b){
+ const x=a&&typeof a==='object'?a:fresh(),y=b&&typeof b==='object'?b:fresh();
+ return {
+  completed:[...new Set([...(Array.isArray(x.completed)?x.completed:[]),...(Array.isArray(y.completed)?y.completed:[])].map(Number))],
+  reviewRegistered:[...new Set([...(Array.isArray(x.reviewRegistered)?x.reviewRegistered:[]),...(Array.isArray(y.reviewRegistered)?y.reviewRegistered:[])])],
+  activeTopic:y.activeTopic||x.activeTopic||null
+ };
+}
+function migrateK1Progress(uid){
+ if(!uid||uid==='local')return;
+ try{
+  const localRaw=localStorage.getItem('kibo_korean1_progress_v1_local');
+  const userKeyName='kibo_korean1_progress_v1_'+uid;
+  const userRaw=localStorage.getItem(userKeyName);
+  if(localRaw)localStorage.setItem(userKeyName,JSON.stringify(mergeK1Progress(JSON.parse(localRaw),JSON.parse(userRaw||'null'))));
+  progress=load();
+  renderProgress();
+ }catch(e){console.warn('KIBO Korean 1 progress migration failed',e);}
+}
+try{
+ const auth=window.firebase&&firebase.auth&&firebase.auth();
+ 
+async function restoreK1CloudProgress(uid){
+ if(!uid||!window.firebase||!firebase.app||!firebase.app().functions)return false;
+ try{
+  const fn=firebase.app().functions('us-east1').httpsCallable('getStudentCourseProgress');
+  const result=await fn({courseKey:'kiboKorean1'});
+  const cloud=result.data?.progress||{};
+  const cloudLocal={
+   completed:Array.isArray(cloud.completedTopics)?cloud.completedTopics.map(Number):[],
+   reviewRegistered:[],
+   activeTopic:cloud.activeTopic&&typeof cloud.activeTopic==='object'?cloud.activeTopic:null
+  };
+  progress=mergeK1Progress(load(),cloudLocal);
+  try{localStorage.setItem(storageKey(),JSON.stringify(progress));}catch(_e){}
+  renderProgress();
+  if(window.kiboSyncCourseProgress)window.kiboSyncCourseProgress('kiboKorean1',{
+   completedTopics:progress.completed,
+   topicCatalog:TOPICS.map(t=>({number:t.n,title:t.title})),
+   activeTopic:progress.activeTopic?{number:Number(progress.activeTopic.number),title:String(progress.activeTopic.title||''),status:'in_progress'}:null,
+   repeatWords:Array.isArray(cloud.repeatWords)?cloud.repeatWords:[],
+   updatedAt:Date.now()
+  });
+  return true;
+ }catch(error){console.warn('K1 cloud progress restore failed; local progress kept',error);return false;}
+}
+if(auth&&typeof auth.onAuthStateChanged==='function')auth.onAuthStateChanged(user=>{if(user&&user.uid){migrateK1Progress(user.uid);restoreK1CloudProgress(user.uid);}});
+}catch(e){console.warn('KIBO Korean 1 auth progress listener unavailable',e);}
+
 function save(){try{localStorage.setItem(storageKey(),JSON.stringify(progress));}catch(e){console.warn('KIBO Korean 1 progress save failed',e);}if(window.kiboSyncCourseProgress)window.kiboSyncCourseProgress('kiboKorean1',{completedTopics:progress.completed,topicCatalog:TOPICS.map(t=>({number:t.n,title:t.title})),activeTopic:current&&!progress.completed.includes(current.n)?{number:current.n,title:current.title,status:'in_progress'}:null,repeatWords:(window.kiboK1RepeatWords||[]),updatedAt:Date.now()});}
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function norm(v){return String(v||'').normalize('NFC').toLowerCase().replace(/[\u200b\u200c\u200d]/g,'').replace(/\s+/g,'').trim();}
@@ -6414,6 +6495,55 @@ const storageKey=()=>`kibo_korean2_progress_v1_${userKey()}`;
 const fresh=()=>({completed:[],reviewRegistered:[],activeTopic:null});
 function load(){try{const v=JSON.parse(localStorage.getItem(storageKey())||'null');return v&&Array.isArray(v.completed)?{completed:v.completed.map(Number),reviewRegistered:Array.isArray(v.reviewRegistered)?v.reviewRegistered:[],activeTopic:v.activeTopic&&typeof v.activeTopic==='object'?v.activeTopic:null}:fresh();}catch(e){return fresh();}}
 let progress=load();
+function mergeK2Progress(a,b){
+ const x=a&&typeof a==='object'?a:fresh(),y=b&&typeof b==='object'?b:fresh();
+ return {
+  completed:[...new Set([...(Array.isArray(x.completed)?x.completed:[]),...(Array.isArray(y.completed)?y.completed:[])].map(Number))],
+  reviewRegistered:[...new Set([...(Array.isArray(x.reviewRegistered)?x.reviewRegistered:[]),...(Array.isArray(y.reviewRegistered)?y.reviewRegistered:[])])],
+  activeTopic:y.activeTopic||x.activeTopic||null
+ };
+}
+function migrateK2Progress(uid){
+ if(!uid||uid==='local')return;
+ try{
+  const localRaw=localStorage.getItem('kibo_korean2_progress_v1_local');
+  const userKeyName='kibo_korean2_progress_v1_'+uid;
+  const userRaw=localStorage.getItem(userKeyName);
+  if(localRaw)localStorage.setItem(userKeyName,JSON.stringify(mergeK2Progress(JSON.parse(localRaw),JSON.parse(userRaw||'null'))));
+  progress=load();
+  renderProgress();
+ }catch(e){console.warn('KIBO Korean 2 progress migration failed',e);}
+}
+try{
+ const auth=window.firebase&&firebase.auth&&firebase.auth();
+ 
+async function restoreK2CloudProgress(uid){
+ if(!uid||!window.firebase||!firebase.app||!firebase.app().functions)return false;
+ try{
+  const fn=firebase.app().functions('us-east1').httpsCallable('getStudentCourseProgress');
+  const result=await fn({courseKey:'kiboKorean2'});
+  const cloud=result.data?.progress||{};
+  const cloudLocal={
+   completed:Array.isArray(cloud.completedTopics)?cloud.completedTopics.map(Number):[],
+   reviewRegistered:[],
+   activeTopic:cloud.activeTopic&&typeof cloud.activeTopic==='object'?cloud.activeTopic:null
+  };
+  progress=mergeK2Progress(load(),cloudLocal);
+  try{localStorage.setItem(storageKey(),JSON.stringify(progress));}catch(_e){}
+  renderProgress();
+  if(window.kiboSyncCourseProgress)window.kiboSyncCourseProgress('kiboKorean2',{
+   completedTopics:progress.completed,
+   topicCatalog:TOPICS.map(t=>({number:t.n,title:t.title})),
+   activeTopic:progress.activeTopic?{number:Number(progress.activeTopic.number),title:String(progress.activeTopic.title||''),status:'in_progress'}:null,
+   repeatWords:Array.isArray(cloud.repeatWords)?cloud.repeatWords:[],
+   updatedAt:Date.now()
+  });
+  return true;
+ }catch(error){console.warn('K2 cloud progress restore failed; local progress kept',error);return false;}
+}
+if(auth&&typeof auth.onAuthStateChanged==='function')auth.onAuthStateChanged(user=>{if(user&&user.uid){migrateK2Progress(user.uid);restoreK2CloudProgress(user.uid);}});
+}catch(e){console.warn('KIBO Korean 2 auth progress listener unavailable',e);}
+
 function save(){try{localStorage.setItem(storageKey(),JSON.stringify(progress));}catch(e){console.warn('KIBO Korean 2 progress save failed',e);}if(window.kiboSyncCourseProgress)window.kiboSyncCourseProgress('kiboKorean2',{completedTopics:progress.completed,topicCatalog:TOPICS.map(t=>({number:t.n,title:t.title})),activeTopic:current&&!progress.completed.includes(current.n)?{number:current.n,title:current.title,status:'in_progress'}:null,repeatWords:(window.kiboK2RepeatWords||[]),updatedAt:Date.now()});}
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function norm(v){return String(v||'').normalize('NFC').toLowerCase().replace(/[\u200b\u200c\u200d]/g,'').replace(/\s+/g,'').trim();}

@@ -546,11 +546,49 @@ exports.saveStudentCourseProgress = onCall(async (request) => {
   const config = COURSE_PROGRESS_CONFIG[courseKey];
   if (!config) throw new HttpsError("invalid-argument", "Kurs turi noto'g'ri.");
   const progress = cleanProgressPayload(request.data?.progress, config);
-  await getFirestore().collection("kiboStudentCourseProgress").doc(request.auth.uid).set({
-    uid: request.auth.uid,
-    courses: { [courseKey]: { ...progress, updatedAt: FieldValue.serverTimestamp() } }
-  }, { merge: true });
+  const ref = getFirestore().collection("kiboStudentCourseProgress").doc(request.auth.uid);
+  await getFirestore().runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const existing = snap.exists ? (snap.data()?.courses?.[courseKey] || {}) : {};
+    const mergedCompleted = [...new Set([
+      ...(Array.isArray(existing.completedTopics) ? existing.completedTopics : []),
+      ...progress.completedTopics
+    ])].map(Number).filter(n => Number.isInteger(n) && n >= 1 && n <= config.topicCount)
+      .sort((a, b) => a - b);
+    tx.set(ref, {
+      uid: request.auth.uid,
+      courses: {
+        [courseKey]: {
+          ...progress,
+          completedTopics: mergedCompleted,
+          updatedAt: FieldValue.serverTimestamp()
+        }
+      }
+    }, { merge: true });
+  });
   return { ok: true };
+});
+
+// Student reads only their own saved course progress.
+exports.getStudentCourseProgress = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError("unauthenticated", "Avval hisobingizga kiring.");
+  const courseKey = String(request.data?.courseKey || "");
+  if (!COURSE_PROGRESS_CONFIG[courseKey]) {
+    throw new HttpsError("invalid-argument", "Kurs turi noto'g'ri.");
+  }
+  const snap = await getFirestore().collection("kiboStudentCourseProgress").doc(request.auth.uid).get();
+  const course = snap.exists ? (snap.data()?.courses?.[courseKey] || {}) : {};
+  return {
+    ok: true,
+    courseKey,
+    progress: {
+      completedTopics: Array.isArray(course.completedTopics) ? course.completedTopics : [],
+      topicCatalog: Array.isArray(course.topicCatalog) ? course.topicCatalog : [],
+      activeTopic: course.activeTopic || null,
+      repeatWords: Array.isArray(course.repeatWords) ? course.repeatWords : [],
+      updatedAt: course.updatedAt?.toMillis?.() || Number(course.clientUpdatedAt) || null
+    }
+  };
 });
 exports.getTeacherCourseProgress = onCall(async (request) => {
   if (!request.auth) throw new HttpsError("unauthenticated", "Avval hisobingizga kiring.");
