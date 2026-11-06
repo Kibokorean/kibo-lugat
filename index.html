@@ -1894,6 +1894,721 @@ body.night #k1TopicCatalog .kc-topic:disabled .kc-topic-status,body.dark #k1Topi
 @media(max-width:600px){#kiboCourseView:has(#k1TopicCatalog:not([hidden])){padding:16px 13px 35px!important}#k1TopicCatalog .kc-section-head{align-items:flex-start;flex-direction:column;padding:21px 18px;gap:16px;border-radius:20px}#k1TopicCatalog .kc-section-head:after{right:5px;top:2px;font-size:105px}#k1TopicCatalog .kc-section-head h2{font-size:32px}#k1TopicCatalog .kc-section-head p{font-size:12px}#k1TopicCatalog #k1BackBook{align-self:flex-start}#k1TopicCatalog .kc-overall-progress{padding:16px;margin-bottom:14px}#k1TopicCatalog .kc-topic-grid{grid-template-columns:1fr;gap:10px}#k1TopicCatalog .kc-topic{min-height:78px;padding:12px 13px;border-radius:16px}#k1TopicCatalog .kc-topic-num{width:39px;height:39px;border-radius:12px}#k1TopicCatalog .kc-topic-copy strong{font-size:13px}}
 </style>
 
+<style id="kibo-yonsei3-catalog-redesign">
+/* KIBO KOREAN — Yonsei 3 topic catalog refresh
+   Faqat #kcTopicCatalog ko‘rinishini yangilaydi; progress va unlock logikasi o‘zgarmaydi. */
+#kcTopicCatalog{
+  --y3-accent:#4b9aff;
+  --y3-accent-strong:#287cff;
+  --y3-card:#101d30;
+  --y3-card-hover:#142640;
+  --y3-border:rgba(112,157,213,.19);
+  --y3-muted:#91a5c1;
+  padding-bottom:26px;
+}
+#kcTopicCatalog .kc-section-head{
+  align-items:center;
+  gap:24px;
+  margin:8px 0 24px;
+}
+#kcTopicCatalog .kc-section-head > div{min-width:0}
+#kcTopicCatalog .kc-eyebrow{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  font-size:10px;
+  letter-spacing:1.7px;
+  color:#69adff;
+}
+#kcTopicCatalog .kc-section-head h2{
+  margin:9px 0 7px;
+  font-size:clamp(29px,3.4vw,39px);
+  line-height:1.12;
+  letter-spacing:-1.1px;
+  font-weight:900;
+}
+#kcTopicCatalog .kc-section-head p{
+  max-width:660px;
+  margin:0;
+  color:var(--y3-muted);
+  font-size:14px;
+  line-height:1.65;
+}
+#kcTopicCatalog #kcBackBook{
+  flex:none;
+  min-height:46px;
+  padding:0 19px;
+  border-radius:14px;
+  border:1px solid rgba(111,164,232,.24);
+  background:linear-gradient(145deg,#14243a,#101c2e);
+  color:#eaf3ff;
+  box-shadow:0 5px 16px rgba(0,0,0,.12);
+  transition:transform .2s ease,border-color .2s ease,background .2s ease;
+}
+#kcTopicCatalog #kcBackBook:hover{
+  transform:translateY(-2px);
+  border-color:rgba(91,160,255,.65);
+  background:#172b47;
+}
+#kcTopicCatalog .kc-overall-progress{
+  position:relative;
+  overflow:hidden;
+  padding:19px 22px 18px;
+  margin:0 0 20px;
+  border:1px solid rgba(105,157,224,.22);
+  border-radius:19px;
+  background:linear-gradient(115deg,rgba(22,43,69,.98),rgba(14,28,47,.98));
+  box-shadow:0 12px 30px rgba(0,0,0,.13),inset 0 1px 0 rgba(255,255,255,.035);
+}
+#kcTopicCatalog .kc-overall-progress:before{
+  content:"";
+  position:absolute;
+  top:0;left:22px;right:22px;
+  height:1px;
+  background:linear-gradient(90deg,transparent,rgba(99,166,255,.55),transparent);
+}
+#kcTopicCatalog .kc-overall-progress>div:first-child{
+  display:flex;
+  align-items:baseline;
+  gap:7px;
+  margin:0 0 13px;
+  color:#a9bad0;
+  font-size:13px;
+  font-weight:650;
+}
+#kcTopicCatalog #kcCompletedCount{
+  color:#f4f8ff;
+  font-size:20px;
+  font-weight:950;
+  letter-spacing:-.5px;
+  font-variant-numeric:tabular-nums;
+}
+#kcTopicCatalog .kc-progress-track{
+  height:9px;
+  overflow:hidden;
+  border-radius:999px;
+  background:#263a54;
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.25);
+}
+#kcTopicCatalog .kc-progress-track i{
+  border-radius:inherit;
+  background:linear-gradient(90deg,#287cff,#55a6ff 65%,#83c8ff);
+  box-shadow:0 0 16px rgba(67,151,255,.35);
+  transition:width .45s cubic-bezier(.2,.75,.25,1);
+}
+#kcTopicCatalog .kc-topic-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+}
+#kcTopicCatalog .kc-topic{
+  position:relative;
+  isolation:isolate;
+  display:flex;
+  align-items:center;
+  gap:13px;
+  min-width:0;
+  min-height:84px;
+  padding:14px 15px;
+  overflow:hidden;
+  text-align:left;
+  border:1px solid var(--y3-border);
+  border-radius:17px;
+  background:linear-gradient(145deg,#111f33,#0e192a);
+  color:#eef5ff;
+  box-shadow:0 5px 16px rgba(0,0,0,.10),inset 0 1px 0 rgba(255,255,255,.025);
+  transition:transform .2s ease,border-color .2s ease,background .2s ease,box-shadow .2s ease,opacity .2s ease;
+}
+#kcTopicCatalog .kc-topic:after{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:0;
+  opacity:0;
+  background:radial-gradient(ellipse at 0% 0%,rgba(54,133,239,.14),transparent 68%);
+  transition:opacity .2s ease;
+}
+#kcTopicCatalog .kc-topic:not(:disabled){
+  border-color:rgba(82,151,239,.31);
+  background:linear-gradient(145deg,#142640,#101d30);
+  cursor:pointer;
+}
+#kcTopicCatalog .kc-topic:not(:disabled):hover{
+  transform:translateY(-3px);
+  border-color:rgba(91,165,255,.8);
+  background:linear-gradient(145deg,#193354,#12243b);
+  box-shadow:0 13px 28px rgba(0,0,0,.2),0 0 0 1px rgba(74,145,239,.08);
+}
+#kcTopicCatalog .kc-topic:not(:disabled):hover:after{opacity:1}
+#kcTopicCatalog .kc-topic:focus-visible{
+  outline:3px solid rgba(91,165,255,.75);
+  outline-offset:3px;
+}
+#kcTopicCatalog .kc-topic:disabled{
+  opacity:1;
+  cursor:not-allowed;
+  filter:none;
+  background:linear-gradient(145deg,#101a29,#0d1725);
+  border-color:rgba(112,139,174,.13);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.018);
+}
+#kcTopicCatalog .kc-topic-num{
+  position:relative;
+  flex:none;
+  display:grid;
+  place-items:center;
+  width:42px;
+  height:42px;
+  border-radius:13px;
+  background:linear-gradient(145deg,#1d416b,#173252);
+  color:#8cc4ff;
+  font-size:14px;
+  font-weight:950;
+  letter-spacing:-.2px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 5px 12px rgba(0,0,0,.12);
+}
+#kcTopicCatalog .kc-topic:disabled .kc-topic-num{
+  background:linear-gradient(145deg,#1a2a40,#172538);
+  color:#607995;
+  box-shadow:none;
+}
+#kcTopicCatalog .kc-topic-copy{
+  flex:1;
+  min-width:0;
+}
+#kcTopicCatalog .kc-topic-copy strong{
+  display:block;
+  overflow:hidden;
+  color:#f0f5fc;
+  font-size:14px;
+  font-weight:850;
+  line-height:1.35;
+  letter-spacing:-.2px;
+  text-overflow:ellipsis;
+  overflow-wrap:anywhere;
+}
+#kcTopicCatalog .kc-topic-copy small{
+  display:block;
+  margin-top:5px;
+  color:#91a9c7;
+  font-size:11.5px;
+  font-weight:550;
+  line-height:1.4;
+}
+#kcTopicCatalog .kc-topic:disabled .kc-topic-copy strong{color:#9aa9bd}
+#kcTopicCatalog .kc-topic:disabled .kc-topic-copy small{color:#718198}
+#kcTopicCatalog .kc-topic-status{
+  flex:none;
+  display:grid;
+  place-items:center;
+  width:29px;
+  height:29px;
+  border:1px solid rgba(90,157,245,.2);
+  border-radius:10px;
+  background:rgba(44,112,198,.14);
+  color:#82bdff;
+  font-size:16px;
+  font-weight:900;
+}
+#kcTopicCatalog .kc-topic:disabled .kc-topic-status{
+  border-color:rgba(145,159,179,.10);
+  background:rgba(117,132,153,.09);
+  color:#91a0b3;
+  font-size:13px;
+}
+@media(max-width:1050px){
+  #kcTopicCatalog .kc-topic-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:650px){
+  #kcTopicCatalog .kc-section-head{align-items:flex-start;gap:14px;margin:4px 0 18px}
+  #kcTopicCatalog .kc-section-head h2{font-size:29px}
+  #kcTopicCatalog .kc-section-head p{font-size:13px;line-height:1.55}
+  #kcTopicCatalog #kcBackBook{min-height:41px;padding:0 13px;border-radius:12px;font-size:12px}
+  #kcTopicCatalog .kc-overall-progress{padding:16px;margin-bottom:15px;border-radius:16px}
+  #kcTopicCatalog .kc-topic-grid{grid-template-columns:1fr;gap:9px}
+  #kcTopicCatalog .kc-topic{min-height:76px;padding:11px 12px;border-radius:15px;gap:11px}
+  #kcTopicCatalog .kc-topic-num{width:39px;height:39px;border-radius:12px;font-size:13px}
+  #kcTopicCatalog .kc-topic-copy strong{font-size:13px}
+  #kcTopicCatalog .kc-topic-copy small{font-size:10.5px;margin-top:4px}
+  #kcTopicCatalog .kc-topic-status{width:27px;height:27px;border-radius:9px}
+}
+@media(prefers-reduced-motion:reduce){
+  #kcTopicCatalog .kc-topic,
+  #kcTopicCatalog .kc-topic:after,
+  #kcTopicCatalog .kc-progress-track i,
+  #kcTopicCatalog #kcBackBook{transition:none!important}
+}
+</style>
+
+
+<style id="kibo-korean1-match-yonsei3-catalog">
+/* KIBO KOREAN 1 topic catalog — screenshot reference match.
+   Only presentation is changed. Existing IDs, buttons, unlock rules and JS remain untouched. */
+#kiboCourseView:has(#k1TopicCatalog:not([hidden])){
+  background:#081321!important;
+}
+#k1TopicCatalog{
+  width:min(100%,1280px);
+  max-width:1280px;
+  margin:0 auto;
+  padding:8px 0 44px;
+}
+#k1TopicCatalog .kc-section-head{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:24px;
+  margin:0 0 22px;
+  padding:0;
+  overflow:visible;
+  border:0;
+  border-radius:0;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+#k1TopicCatalog .kc-section-head:after{display:none!important;content:none!important}
+#k1TopicCatalog .kc-section-head>div{min-width:0}
+#k1TopicCatalog .kc-eyebrow{
+  display:inline-flex;
+  align-items:center;
+  padding:0;
+  margin:0 0 7px;
+  background:transparent!important;
+  color:#65aaff;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:1.6px;
+}
+#k1TopicCatalog .kc-section-head h2{
+  margin:4px 0 7px;
+  color:#f4f7fc!important;
+  font-size:clamp(28px,3vw,34px);
+  line-height:1.15;
+  font-weight:900;
+  letter-spacing:-1px;
+}
+#k1TopicCatalog .kc-section-head p{
+  max-width:720px;
+  margin:0;
+  color:#9db1cd!important;
+  font-size:14px;
+  line-height:1.6;
+}
+#k1TopicCatalog #k1BackBook{
+  position:relative;
+  z-index:2;
+  flex:none;
+  min-height:46px;
+  padding:0 17px;
+  border:1px solid #29415f;
+  border-radius:13px;
+  background:#101e31!important;
+  color:#f0f5fc!important;
+  box-shadow:none!important;
+  font-size:14px;
+  font-weight:850;
+  transition:transform .2s,border-color .2s,background .2s;
+}
+#k1TopicCatalog #k1BackBook:hover{
+  transform:translateY(-2px);
+  border-color:#579bfa;
+  background:#142943!important;
+}
+#k1TopicCatalog .kc-overall-progress{
+  position:relative;
+  margin:0 0 18px;
+  padding:16px 18px;
+  border:1px solid #29415f;
+  border-radius:16px;
+  background:#101e31!important;
+  box-shadow:none!important;
+}
+#k1TopicCatalog .kc-overall-progress>div:first-child{
+  display:flex;
+  align-items:baseline;
+  gap:7px;
+  margin:0 0 10px;
+  color:#eaf1fa;
+  font-size:13px;
+  font-weight:650;
+}
+#k1TopicCatalog #k1CompletedCount{
+  color:#f5f8ff!important;
+  font-size:17px;
+  font-weight:950;
+  letter-spacing:-.3px;
+  font-variant-numeric:tabular-nums;
+}
+#k1TopicCatalog .kc-progress-track{
+  height:8px;
+  overflow:hidden;
+  border-radius:999px;
+  background:#263951!important;
+}
+#k1TopicCatalog .kc-progress-track i{
+  border-radius:999px;
+  background:linear-gradient(90deg,#287cff,#58a8ff 65%,#83c8ff)!important;
+  box-shadow:0 0 13px rgba(55,139,255,.2);
+  transition:width .3s ease;
+}
+#k1TopicCatalog .kc-topic-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+}
+#k1TopicCatalog .kc-topic{
+  position:relative;
+  display:flex;
+  align-items:center;
+  gap:13px;
+  min-width:0;
+  min-height:84px;
+  padding:13px 15px;
+  overflow:hidden;
+  text-align:left;
+  border:1px solid rgba(112,145,184,.17);
+  border-radius:17px;
+  background:linear-gradient(145deg,#101b2b,#0e1827)!important;
+  color:#edf4ff!important;
+  box-shadow:none!important;
+  transition:transform .2s ease,border-color .2s ease,background .2s ease,box-shadow .2s ease;
+}
+#k1TopicCatalog .kc-topic:not(:disabled){
+  border-color:rgba(82,151,239,.31);
+  background:linear-gradient(145deg,#142640,#101d30)!important;
+  cursor:pointer;
+}
+#k1TopicCatalog .kc-topic:not(:disabled):hover{
+  transform:translateY(-3px);
+  border-color:rgba(91,165,255,.8);
+  background:linear-gradient(145deg,#193354,#12243b)!important;
+  box-shadow:0 12px 24px rgba(0,0,0,.18)!important;
+}
+#k1TopicCatalog .kc-topic:focus-visible{
+  outline:3px solid rgba(91,165,255,.7);
+  outline-offset:3px;
+}
+#k1TopicCatalog .kc-topic:disabled{
+  opacity:1!important;
+  filter:none!important;
+  cursor:not-allowed;
+  border-color:rgba(112,139,174,.13);
+  background:linear-gradient(145deg,#101a29,#0d1725)!important;
+}
+#k1TopicCatalog .kc-topic-num{
+  flex:none;
+  display:grid;
+  place-items:center;
+  width:42px;
+  height:42px;
+  border-radius:13px;
+  background:linear-gradient(145deg,#1d416b,#173252)!important;
+  color:#8cc4ff!important;
+  font-size:14px;
+  font-weight:950;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07);
+}
+#k1TopicCatalog .kc-topic:disabled .kc-topic-num{
+  background:linear-gradient(145deg,#1a2a40,#172538)!important;
+  color:#607995!important;
+  box-shadow:none!important;
+}
+#k1TopicCatalog .kc-topic-copy{flex:1;min-width:0}
+#k1TopicCatalog .kc-topic-copy strong{
+  display:block;
+  overflow:hidden;
+  color:#f0f5fc!important;
+  font-size:14px;
+  font-weight:850;
+  line-height:1.35;
+  letter-spacing:-.2px;
+  text-overflow:ellipsis;
+  overflow-wrap:anywhere;
+}
+#k1TopicCatalog .kc-topic-copy small{
+  display:block;
+  margin-top:5px;
+  color:#91a9c7!important;
+  font-size:11.5px;
+  font-weight:550;
+  line-height:1.4;
+}
+#k1TopicCatalog .kc-topic:disabled .kc-topic-copy strong{color:#9aa9bd!important}
+#k1TopicCatalog .kc-topic:disabled .kc-topic-copy small{color:#718198!important}
+#k1TopicCatalog .kc-topic-status{
+  flex:none;
+  display:grid;
+  place-items:center;
+  width:28px;
+  height:28px;
+  border:1px solid rgba(90,157,245,.18);
+  border-radius:9px;
+  background:rgba(44,112,198,.14)!important;
+  color:#82bdff!important;
+  font-size:15px;
+  font-weight:900;
+}
+#k1TopicCatalog .kc-topic:disabled .kc-topic-status{
+  border-color:rgba(145,159,179,.1);
+  background:rgba(117,132,153,.09)!important;
+  color:#91a0b3!important;
+  font-size:13px;
+}
+@media(max-width:900px){
+  #k1TopicCatalog .kc-topic-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:600px){
+  #kiboCourseView:has(#k1TopicCatalog:not([hidden])){padding:18px 13px 35px!important}
+  #k1TopicCatalog .kc-section-head{align-items:flex-start;gap:12px;margin-bottom:17px}
+  #k1TopicCatalog .kc-section-head h2{font-size:28px}
+  #k1TopicCatalog .kc-section-head p{font-size:12px;line-height:1.55}
+  #k1TopicCatalog #k1BackBook{min-height:40px;padding:0 12px;border-radius:11px;font-size:12px}
+  #k1TopicCatalog .kc-overall-progress{padding:14px 15px;margin-bottom:14px;border-radius:15px}
+  #k1TopicCatalog .kc-topic-grid{grid-template-columns:1fr;gap:9px}
+  #k1TopicCatalog .kc-topic{min-height:75px;padding:11px 12px;border-radius:15px;gap:11px}
+  #k1TopicCatalog .kc-topic-num{width:39px;height:39px;border-radius:12px}
+  #k1TopicCatalog .kc-topic-copy strong{font-size:13px}
+  #k1TopicCatalog .kc-topic-copy small{font-size:10.5px}
+}
+@media(prefers-reduced-motion:reduce){
+  #k1TopicCatalog .kc-topic,#k1TopicCatalog #k1BackBook,#k1TopicCatalog .kc-progress-track i{transition:none!important}
+}
+</style>
+<style id="kibo-korean2-match-yonsei3-catalog">
+/* KIBO KOREAN 1 topic catalog — screenshot reference match.
+   Only presentation is changed. Existing IDs, buttons, unlock rules and JS remain untouched. */
+#kiboCourseView:has(#k2TopicCatalog:not([hidden])){
+  background:#081321!important;
+}
+#k2TopicCatalog{
+  width:min(100%,1280px);
+  max-width:1280px;
+  margin:0 auto;
+  padding:8px 0 44px;
+}
+#k2TopicCatalog .kc-section-head{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:24px;
+  margin:0 0 22px;
+  padding:0;
+  overflow:visible;
+  border:0;
+  border-radius:0;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+#k2TopicCatalog .kc-section-head:after{display:none!important;content:none!important}
+#k2TopicCatalog .kc-section-head>div{min-width:0}
+#k2TopicCatalog .kc-eyebrow{
+  display:inline-flex;
+  align-items:center;
+  padding:0;
+  margin:0 0 7px;
+  background:transparent!important;
+  color:#65aaff;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:1.6px;
+}
+#k2TopicCatalog .kc-section-head h2{
+  margin:4px 0 7px;
+  color:#f4f7fc!important;
+  font-size:clamp(28px,3vw,34px);
+  line-height:1.15;
+  font-weight:900;
+  letter-spacing:-1px;
+}
+#k2TopicCatalog .kc-section-head p{
+  max-width:720px;
+  margin:0;
+  color:#9db1cd!important;
+  font-size:14px;
+  line-height:1.6;
+}
+#k2TopicCatalog #k2BackBook{
+  position:relative;
+  z-index:2;
+  flex:none;
+  min-height:46px;
+  padding:0 17px;
+  border:1px solid #29415f;
+  border-radius:13px;
+  background:#101e31!important;
+  color:#f0f5fc!important;
+  box-shadow:none!important;
+  font-size:14px;
+  font-weight:850;
+  transition:transform .2s,border-color .2s,background .2s;
+}
+#k2TopicCatalog #k2BackBook:hover{
+  transform:translateY(-2px);
+  border-color:#579bfa;
+  background:#142943!important;
+}
+#k2TopicCatalog .kc-overall-progress{
+  position:relative;
+  margin:0 0 18px;
+  padding:16px 18px;
+  border:1px solid #29415f;
+  border-radius:16px;
+  background:#101e31!important;
+  box-shadow:none!important;
+}
+#k2TopicCatalog .kc-overall-progress>div:first-child{
+  display:flex;
+  align-items:baseline;
+  gap:7px;
+  margin:0 0 10px;
+  color:#eaf1fa;
+  font-size:13px;
+  font-weight:650;
+}
+#k2TopicCatalog #k2CompletedCount{
+  color:#f5f8ff!important;
+  font-size:17px;
+  font-weight:950;
+  letter-spacing:-.3px;
+  font-variant-numeric:tabular-nums;
+}
+#k2TopicCatalog .kc-progress-track{
+  height:8px;
+  overflow:hidden;
+  border-radius:999px;
+  background:#263951!important;
+}
+#k2TopicCatalog .kc-progress-track i{
+  border-radius:999px;
+  background:linear-gradient(90deg,#287cff,#58a8ff 65%,#83c8ff)!important;
+  box-shadow:0 0 13px rgba(55,139,255,.2);
+  transition:width .3s ease;
+}
+#k2TopicCatalog .kc-topic-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+}
+#k2TopicCatalog .kc-topic{
+  position:relative;
+  display:flex;
+  align-items:center;
+  gap:13px;
+  min-width:0;
+  min-height:84px;
+  padding:13px 15px;
+  overflow:hidden;
+  text-align:left;
+  border:1px solid rgba(112,145,184,.17);
+  border-radius:17px;
+  background:linear-gradient(145deg,#101b2b,#0e1827)!important;
+  color:#edf4ff!important;
+  box-shadow:none!important;
+  transition:transform .2s ease,border-color .2s ease,background .2s ease,box-shadow .2s ease;
+}
+#k2TopicCatalog .kc-topic:not(:disabled){
+  border-color:rgba(82,151,239,.31);
+  background:linear-gradient(145deg,#142640,#101d30)!important;
+  cursor:pointer;
+}
+#k2TopicCatalog .kc-topic:not(:disabled):hover{
+  transform:translateY(-3px);
+  border-color:rgba(91,165,255,.8);
+  background:linear-gradient(145deg,#193354,#12243b)!important;
+  box-shadow:0 12px 24px rgba(0,0,0,.18)!important;
+}
+#k2TopicCatalog .kc-topic:focus-visible{
+  outline:3px solid rgba(91,165,255,.7);
+  outline-offset:3px;
+}
+#k2TopicCatalog .kc-topic:disabled{
+  opacity:1!important;
+  filter:none!important;
+  cursor:not-allowed;
+  border-color:rgba(112,139,174,.13);
+  background:linear-gradient(145deg,#101a29,#0d1725)!important;
+}
+#k2TopicCatalog .kc-topic-num{
+  flex:none;
+  display:grid;
+  place-items:center;
+  width:42px;
+  height:42px;
+  border-radius:13px;
+  background:linear-gradient(145deg,#1d416b,#173252)!important;
+  color:#8cc4ff!important;
+  font-size:14px;
+  font-weight:950;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07);
+}
+#k2TopicCatalog .kc-topic:disabled .kc-topic-num{
+  background:linear-gradient(145deg,#1a2a40,#172538)!important;
+  color:#607995!important;
+  box-shadow:none!important;
+}
+#k2TopicCatalog .kc-topic-copy{flex:1;min-width:0}
+#k2TopicCatalog .kc-topic-copy strong{
+  display:block;
+  overflow:hidden;
+  color:#f0f5fc!important;
+  font-size:14px;
+  font-weight:850;
+  line-height:1.35;
+  letter-spacing:-.2px;
+  text-overflow:ellipsis;
+  overflow-wrap:anywhere;
+}
+#k2TopicCatalog .kc-topic-copy small{
+  display:block;
+  margin-top:5px;
+  color:#91a9c7!important;
+  font-size:11.5px;
+  font-weight:550;
+  line-height:1.4;
+}
+#k2TopicCatalog .kc-topic:disabled .kc-topic-copy strong{color:#9aa9bd!important}
+#k2TopicCatalog .kc-topic:disabled .kc-topic-copy small{color:#718198!important}
+#k2TopicCatalog .kc-topic-status{
+  flex:none;
+  display:grid;
+  place-items:center;
+  width:28px;
+  height:28px;
+  border:1px solid rgba(90,157,245,.18);
+  border-radius:9px;
+  background:rgba(44,112,198,.14)!important;
+  color:#82bdff!important;
+  font-size:15px;
+  font-weight:900;
+}
+#k2TopicCatalog .kc-topic:disabled .kc-topic-status{
+  border-color:rgba(145,159,179,.1);
+  background:rgba(117,132,153,.09)!important;
+  color:#91a0b3!important;
+  font-size:13px;
+}
+@media(max-width:900px){
+  #k2TopicCatalog .kc-topic-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:600px){
+  #kiboCourseView:has(#k2TopicCatalog:not([hidden])){padding:18px 13px 35px!important}
+  #k2TopicCatalog .kc-section-head{align-items:flex-start;gap:12px;margin-bottom:17px}
+  #k2TopicCatalog .kc-section-head h2{font-size:28px}
+  #k2TopicCatalog .kc-section-head p{font-size:12px;line-height:1.55}
+  #k2TopicCatalog #k2BackBook{min-height:40px;padding:0 12px;border-radius:11px;font-size:12px}
+  #k2TopicCatalog .kc-overall-progress{padding:14px 15px;margin-bottom:14px;border-radius:15px}
+  #k2TopicCatalog .kc-topic-grid{grid-template-columns:1fr;gap:9px}
+  #k2TopicCatalog .kc-topic{min-height:75px;padding:11px 12px;border-radius:15px;gap:11px}
+  #k2TopicCatalog .kc-topic-num{width:39px;height:39px;border-radius:12px}
+  #k2TopicCatalog .kc-topic-copy strong{font-size:13px}
+  #k2TopicCatalog .kc-topic-copy small{font-size:10.5px}
+}
+@media(prefers-reduced-motion:reduce){
+  #k2TopicCatalog .kc-topic,#k2TopicCatalog #k2BackBook,#k2TopicCatalog .kc-progress-track i{transition:none!important}
+}
+</style>
 </head>
 <body>
 <aside aria-label="Asosiy menyu" id="kiboSideNav">
@@ -1904,7 +2619,7 @@ body.night #k1TopicCatalog .kc-topic:disabled .kc-topic-status,body.dark #k1Topi
 <button class="nav-link" data-nav="review"><span class="nav-icon">↻</span>Takrorlash</button>
 
 <button class="nav-link" data-nav="settings"><span class="nav-icon">⚙</span>Sozlamalar</button>
-<button class="nav-link" data-nav="course" style="display:none"><span class="nav-icon">▣</span>Kurslar</button>
+<button class="nav-link" data-nav="course"><span class="nav-icon">▣</span>Kurs</button>
 <button class="nav-link" data-nav="teacher" style="display:none"><span class="nav-icon">♙</span>O‘qituvchi</button>
 <div class="side-foot">Koreys tilini har kuni o‘rganing</div>
 </aside>
@@ -1915,7 +2630,7 @@ body.night #k1TopicCatalog .kc-topic:disabled .kc-topic-status,body.dark #k1Topi
 <button class="nav-link" data-nav="review"><span class="nav-icon">↻</span>Takrorlash</button>
 
 <button class="nav-link" data-nav="settings"><span class="nav-icon">⚙</span>Sozlamalar</button>
-<button class="nav-link" data-nav="course" style="display:none"><span class="nav-icon">▣</span>Kurslar</button>
+<button class="nav-link" data-nav="course"><span class="nav-icon">▣</span>Kurs</button>
 <button class="nav-link" data-nav="teacher" style="display:none"><span class="nav-icon">♙</span>O‘qituvchi</button>
 </nav>
 <div class="word-section-picker" id="wordSectionPicker">
@@ -1955,23 +2670,6 @@ body.night #k1TopicCatalog .kc-topic:disabled .kc-topic-status,body.dark #k1Topi
 <div class="kibo-stats-heading"><div class="picker-brand">KIBO KOREAN · TEACHER</div><h1>O‘qituvchi kabineti</h1><p>Guruhlarni boshqarish va o‘quvchilarning o‘rganish jarayonini tashkil qilish.</p></div>
 <div class="kibo-teacher-notice" id="kiboTeacherAuthNotice">O‘qituvchi kabinetini ochish uchun Firebase hisobingizga kiring.</div>
 <div id="kiboTeacherWorkspace" hidden>
-<div class="kibo-teacher-card" id="kiboCourseAccessManager">
-  <h2>Kurslarga kirish ruxsati</h2>
-  <p class="kibo-teacher-muted">O‘quvchining saytda ro‘yxatdan o‘tgan emailini kiriting va qaysi kurslarga ruxsat berishni tanlang. Har bir kurs alohida boshqariladi.</p>
-  <label for="kiboCourseStudentEmail">O‘quvchining emaili</label>
-  <input id="kiboCourseStudentEmail" type="email" placeholder="student@gmail.com" autocomplete="email">
-  <div class="kibo-course-permission-options" style="display:grid;gap:10px;margin:14px 0">
-    <label><input type="checkbox" id="kiboGrantYonsei3" value="yonsei3"> Yonsei 3</label>
-    <label><input type="checkbox" id="kiboGrantKibo1" value="kiboKorean1"> KIBO Korean 1</label>
-    <label><input type="checkbox" id="kiboGrantKibo2" value="kiboKorean2"> KIBO Korean 2</label>
-  </div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <button type="button" id="kiboCourseGrantSelected">Tanlangan kurslarga ruxsat berish</button>
-    <button type="button" class="secondary" id="kiboCourseRevokeSelected">Tanlangan kurslardan ruxsatni olish</button>
-  </div>
-  <p id="kiboCourseAccessStatus" class="kibo-teacher-muted" role="status" aria-live="polite"></p>
-</div>
-
 <div class="kibo-teacher-card" id="kiboRegisteredUsersCard"><h2>Saytda ro‘yxatdan o‘tganlar</h2><div id="kiboRegisteredUsersCount" style="font-size:48px;font-weight:850;line-height:1.2">—</div><p class="kibo-teacher-muted" id="kiboRegisteredUsersStatus">Hisoblar soni yuklanmoqda…</p><button type="button" id="kiboRefreshRegisteredUsers">Qayta tekshirish</button></div>
 <div class="kibo-teacher-card" id="yonsei3ReviewCard"><h2>Yonsei 3 · Diktant tekshiruvi</h2><p class="kibo-teacher-muted">O‘quvchilar yuborgan diktantlarni ko‘rib chiqing. O‘quvchi diktantni yuborishi bilan keyingi mavzu ochiladi. Agar diktant rad etilsa, o‘sha mavzu va undan keyingi mavzular qayta topshirilguncha qulflanadi.</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><button type="button" data-y3-filter="submitted">Kutilmoqda</button><button type="button" data-y3-filter="approved">Tasdiqlangan</button><button type="button" data-y3-filter="rejected">Rad etilgan</button></div><p id="y3TeacherQueueStatus" class="kibo-teacher-muted" role="status">Topshiriqlar yuklanmagan.</p><div id="y3TeacherQueue"></div></div>
 </div></section>
@@ -5446,724 +6144,7 @@ body.night #kiboStatsView .kibo-leaderboard-tabs button.active{background:var(--
       localStorage.setItem('kiboPersonalFlashcardStudy',JSON.stringify({title:title,deckId:d.id,sectionIndex:0,sectionTitle:title,cards:part.map(c=>({ko:String(c.front),uz:String(c.back),ex:''})),startedAt:Date.now()}));
       modal.querySelector('#kiboFcSectionPicker').style.display='none';const frame=modal.querySelector('#kiboFcIntegratedStudyFrame');frame.style.display='block';
       let html=KIBO_PERSONAL_STUDY_HTML;
-      html=html.replace('</head>','<style>html,body{width:100%;min-width:0;height:100%;overflow:auto}.app{display:block!important;width:100%!important;min-width:0!important;max-width:none!important;margin:0!important;padding:0 22px!important}.top{grid-template-columns:minmax(0,1fr)!important;height:72px!important;gap:0!important}.brand,.top-actions{display:none!important}.main{display:grid!important;width:100%!important;min-width:0!important;grid-template-columns:220px minmax(0,1fr) 275px!important;gap:18px!important;margin:16px 0 22px!important;align-items:start!important}.main>.side{grid-column:1!important;grid-row:1!important;display:block!important;position:sticky!important;top:12px!important;min-width:0!important;width:auto!important;backdrop-filter:none!important;filter:none!important;opacity:1!important}.main>.study{grid-column:2!important;grid-row:1!important;display:block!important;width:auto!important;min-width:0!important;max-width:none!important;min-height:calc(100vh - 125px)!important;padding:26px 24px!important}.main>.right-panel{grid-column:3!important;grid-row:1!important;display:block!important;min-width:0!important;width:auto!important;max-width:none!important}.flashcard{min-height:310px!important}.word,.answer{font-size:64px!important}@media(max-width:1100px){.main{grid-template-columns:190px minmax(0,1fr)!important;gap:12px!important}.main>.right-panel{display:none!important}.main>.study{grid-column:2!important;padding:18px 12px!important}.flashcard{min-height:260px!important}}@media(max-width:650px){.app{padding:0 10px!important}.main{grid-template-columns:minmax(0,1fr)!important}.main>.side{display:none!important}.main>.study{grid-column:1!important;padding:18px 12px!important}.flashcard{min-height:240px!important}}</style>
-<style id="kibo-yonsei3-catalog-redesign">
-/* KIBO KOREAN — Yonsei 3 topic catalog refresh
-   Faqat #kcTopicCatalog ko‘rinishini yangilaydi; progress va unlock logikasi o‘zgarmaydi. */
-#kcTopicCatalog{
-  --y3-accent:#4b9aff;
-  --y3-accent-strong:#287cff;
-  --y3-card:#101d30;
-  --y3-card-hover:#142640;
-  --y3-border:rgba(112,157,213,.19);
-  --y3-muted:#91a5c1;
-  padding-bottom:26px;
-}
-#kcTopicCatalog .kc-section-head{
-  align-items:center;
-  gap:24px;
-  margin:8px 0 24px;
-}
-#kcTopicCatalog .kc-section-head > div{min-width:0}
-#kcTopicCatalog .kc-eyebrow{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  font-size:10px;
-  letter-spacing:1.7px;
-  color:#69adff;
-}
-#kcTopicCatalog .kc-section-head h2{
-  margin:9px 0 7px;
-  font-size:clamp(29px,3.4vw,39px);
-  line-height:1.12;
-  letter-spacing:-1.1px;
-  font-weight:900;
-}
-#kcTopicCatalog .kc-section-head p{
-  max-width:660px;
-  margin:0;
-  color:var(--y3-muted);
-  font-size:14px;
-  line-height:1.65;
-}
-#kcTopicCatalog #kcBackBook{
-  flex:none;
-  min-height:46px;
-  padding:0 19px;
-  border-radius:14px;
-  border:1px solid rgba(111,164,232,.24);
-  background:linear-gradient(145deg,#14243a,#101c2e);
-  color:#eaf3ff;
-  box-shadow:0 5px 16px rgba(0,0,0,.12);
-  transition:transform .2s ease,border-color .2s ease,background .2s ease;
-}
-#kcTopicCatalog #kcBackBook:hover{
-  transform:translateY(-2px);
-  border-color:rgba(91,160,255,.65);
-  background:#172b47;
-}
-#kcTopicCatalog .kc-overall-progress{
-  position:relative;
-  overflow:hidden;
-  padding:19px 22px 18px;
-  margin:0 0 20px;
-  border:1px solid rgba(105,157,224,.22);
-  border-radius:19px;
-  background:linear-gradient(115deg,rgba(22,43,69,.98),rgba(14,28,47,.98));
-  box-shadow:0 12px 30px rgba(0,0,0,.13),inset 0 1px 0 rgba(255,255,255,.035);
-}
-#kcTopicCatalog .kc-overall-progress:before{
-  content:"";
-  position:absolute;
-  top:0;left:22px;right:22px;
-  height:1px;
-  background:linear-gradient(90deg,transparent,rgba(99,166,255,.55),transparent);
-}
-#kcTopicCatalog .kc-overall-progress>div:first-child{
-  display:flex;
-  align-items:baseline;
-  gap:7px;
-  margin:0 0 13px;
-  color:#a9bad0;
-  font-size:13px;
-  font-weight:650;
-}
-#kcTopicCatalog #kcCompletedCount{
-  color:#f4f8ff;
-  font-size:20px;
-  font-weight:950;
-  letter-spacing:-.5px;
-  font-variant-numeric:tabular-nums;
-}
-#kcTopicCatalog .kc-progress-track{
-  height:9px;
-  overflow:hidden;
-  border-radius:999px;
-  background:#263a54;
-  box-shadow:inset 0 1px 3px rgba(0,0,0,.25);
-}
-#kcTopicCatalog .kc-progress-track i{
-  border-radius:inherit;
-  background:linear-gradient(90deg,#287cff,#55a6ff 65%,#83c8ff);
-  box-shadow:0 0 16px rgba(67,151,255,.35);
-  transition:width .45s cubic-bezier(.2,.75,.25,1);
-}
-#kcTopicCatalog .kc-topic-grid{
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:12px;
-}
-#kcTopicCatalog .kc-topic{
-  position:relative;
-  isolation:isolate;
-  display:flex;
-  align-items:center;
-  gap:13px;
-  min-width:0;
-  min-height:84px;
-  padding:14px 15px;
-  overflow:hidden;
-  text-align:left;
-  border:1px solid var(--y3-border);
-  border-radius:17px;
-  background:linear-gradient(145deg,#111f33,#0e192a);
-  color:#eef5ff;
-  box-shadow:0 5px 16px rgba(0,0,0,.10),inset 0 1px 0 rgba(255,255,255,.025);
-  transition:transform .2s ease,border-color .2s ease,background .2s ease,box-shadow .2s ease,opacity .2s ease;
-}
-#kcTopicCatalog .kc-topic:after{
-  content:"";
-  position:absolute;
-  z-index:-1;
-  inset:0;
-  opacity:0;
-  background:radial-gradient(ellipse at 0% 0%,rgba(54,133,239,.14),transparent 68%);
-  transition:opacity .2s ease;
-}
-#kcTopicCatalog .kc-topic:not(:disabled){
-  border-color:rgba(82,151,239,.31);
-  background:linear-gradient(145deg,#142640,#101d30);
-  cursor:pointer;
-}
-#kcTopicCatalog .kc-topic:not(:disabled):hover{
-  transform:translateY(-3px);
-  border-color:rgba(91,165,255,.8);
-  background:linear-gradient(145deg,#193354,#12243b);
-  box-shadow:0 13px 28px rgba(0,0,0,.2),0 0 0 1px rgba(74,145,239,.08);
-}
-#kcTopicCatalog .kc-topic:not(:disabled):hover:after{opacity:1}
-#kcTopicCatalog .kc-topic:focus-visible{
-  outline:3px solid rgba(91,165,255,.75);
-  outline-offset:3px;
-}
-#kcTopicCatalog .kc-topic:disabled{
-  opacity:1;
-  cursor:not-allowed;
-  filter:none;
-  background:linear-gradient(145deg,#101a29,#0d1725);
-  border-color:rgba(112,139,174,.13);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.018);
-}
-#kcTopicCatalog .kc-topic-num{
-  position:relative;
-  flex:none;
-  display:grid;
-  place-items:center;
-  width:42px;
-  height:42px;
-  border-radius:13px;
-  background:linear-gradient(145deg,#1d416b,#173252);
-  color:#8cc4ff;
-  font-size:14px;
-  font-weight:950;
-  letter-spacing:-.2px;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 5px 12px rgba(0,0,0,.12);
-}
-#kcTopicCatalog .kc-topic:disabled .kc-topic-num{
-  background:linear-gradient(145deg,#1a2a40,#172538);
-  color:#607995;
-  box-shadow:none;
-}
-#kcTopicCatalog .kc-topic-copy{
-  flex:1;
-  min-width:0;
-}
-#kcTopicCatalog .kc-topic-copy strong{
-  display:block;
-  overflow:hidden;
-  color:#f0f5fc;
-  font-size:14px;
-  font-weight:850;
-  line-height:1.35;
-  letter-spacing:-.2px;
-  text-overflow:ellipsis;
-  overflow-wrap:anywhere;
-}
-#kcTopicCatalog .kc-topic-copy small{
-  display:block;
-  margin-top:5px;
-  color:#91a9c7;
-  font-size:11.5px;
-  font-weight:550;
-  line-height:1.4;
-}
-#kcTopicCatalog .kc-topic:disabled .kc-topic-copy strong{color:#9aa9bd}
-#kcTopicCatalog .kc-topic:disabled .kc-topic-copy small{color:#718198}
-#kcTopicCatalog .kc-topic-status{
-  flex:none;
-  display:grid;
-  place-items:center;
-  width:29px;
-  height:29px;
-  border:1px solid rgba(90,157,245,.2);
-  border-radius:10px;
-  background:rgba(44,112,198,.14);
-  color:#82bdff;
-  font-size:16px;
-  font-weight:900;
-}
-#kcTopicCatalog .kc-topic:disabled .kc-topic-status{
-  border-color:rgba(145,159,179,.10);
-  background:rgba(117,132,153,.09);
-  color:#91a0b3;
-  font-size:13px;
-}
-@media(max-width:1050px){
-  #kcTopicCatalog .kc-topic-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-}
-@media(max-width:650px){
-  #kcTopicCatalog .kc-section-head{align-items:flex-start;gap:14px;margin:4px 0 18px}
-  #kcTopicCatalog .kc-section-head h2{font-size:29px}
-  #kcTopicCatalog .kc-section-head p{font-size:13px;line-height:1.55}
-  #kcTopicCatalog #kcBackBook{min-height:41px;padding:0 13px;border-radius:12px;font-size:12px}
-  #kcTopicCatalog .kc-overall-progress{padding:16px;margin-bottom:15px;border-radius:16px}
-  #kcTopicCatalog .kc-topic-grid{grid-template-columns:1fr;gap:9px}
-  #kcTopicCatalog .kc-topic{min-height:76px;padding:11px 12px;border-radius:15px;gap:11px}
-  #kcTopicCatalog .kc-topic-num{width:39px;height:39px;border-radius:12px;font-size:13px}
-  #kcTopicCatalog .kc-topic-copy strong{font-size:13px}
-  #kcTopicCatalog .kc-topic-copy small{font-size:10.5px;margin-top:4px}
-  #kcTopicCatalog .kc-topic-status{width:27px;height:27px;border-radius:9px}
-}
-@media(prefers-reduced-motion:reduce){
-  #kcTopicCatalog .kc-topic,
-  #kcTopicCatalog .kc-topic:after,
-  #kcTopicCatalog .kc-progress-track i,
-  #kcTopicCatalog #kcBackBook{transition:none!important}
-}
-</style>
-
-
-<style id="kibo-korean1-match-yonsei3-catalog">
-/* KIBO KOREAN 1 topic catalog — screenshot reference match.
-   Only presentation is changed. Existing IDs, buttons, unlock rules and JS remain untouched. */
-#kiboCourseView:has(#k1TopicCatalog:not([hidden])){
-  background:#081321!important;
-}
-#k1TopicCatalog{
-  width:min(100%,1280px);
-  max-width:1280px;
-  margin:0 auto;
-  padding:8px 0 44px;
-}
-#k1TopicCatalog .kc-section-head{
-  position:relative;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:24px;
-  margin:0 0 22px;
-  padding:0;
-  overflow:visible;
-  border:0;
-  border-radius:0;
-  background:transparent!important;
-  box-shadow:none!important;
-}
-#k1TopicCatalog .kc-section-head:after{display:none!important;content:none!important}
-#k1TopicCatalog .kc-section-head>div{min-width:0}
-#k1TopicCatalog .kc-eyebrow{
-  display:inline-flex;
-  align-items:center;
-  padding:0;
-  margin:0 0 7px;
-  background:transparent!important;
-  color:#65aaff;
-  font-size:10px;
-  font-weight:900;
-  letter-spacing:1.6px;
-}
-#k1TopicCatalog .kc-section-head h2{
-  margin:4px 0 7px;
-  color:#f4f7fc!important;
-  font-size:clamp(28px,3vw,34px);
-  line-height:1.15;
-  font-weight:900;
-  letter-spacing:-1px;
-}
-#k1TopicCatalog .kc-section-head p{
-  max-width:720px;
-  margin:0;
-  color:#9db1cd!important;
-  font-size:14px;
-  line-height:1.6;
-}
-#k1TopicCatalog #k1BackBook{
-  position:relative;
-  z-index:2;
-  flex:none;
-  min-height:46px;
-  padding:0 17px;
-  border:1px solid #29415f;
-  border-radius:13px;
-  background:#101e31!important;
-  color:#f0f5fc!important;
-  box-shadow:none!important;
-  font-size:14px;
-  font-weight:850;
-  transition:transform .2s,border-color .2s,background .2s;
-}
-#k1TopicCatalog #k1BackBook:hover{
-  transform:translateY(-2px);
-  border-color:#579bfa;
-  background:#142943!important;
-}
-#k1TopicCatalog .kc-overall-progress{
-  position:relative;
-  margin:0 0 18px;
-  padding:16px 18px;
-  border:1px solid #29415f;
-  border-radius:16px;
-  background:#101e31!important;
-  box-shadow:none!important;
-}
-#k1TopicCatalog .kc-overall-progress>div:first-child{
-  display:flex;
-  align-items:baseline;
-  gap:7px;
-  margin:0 0 10px;
-  color:#eaf1fa;
-  font-size:13px;
-  font-weight:650;
-}
-#k1TopicCatalog #k1CompletedCount{
-  color:#f5f8ff!important;
-  font-size:17px;
-  font-weight:950;
-  letter-spacing:-.3px;
-  font-variant-numeric:tabular-nums;
-}
-#k1TopicCatalog .kc-progress-track{
-  height:8px;
-  overflow:hidden;
-  border-radius:999px;
-  background:#263951!important;
-}
-#k1TopicCatalog .kc-progress-track i{
-  border-radius:999px;
-  background:linear-gradient(90deg,#287cff,#58a8ff 65%,#83c8ff)!important;
-  box-shadow:0 0 13px rgba(55,139,255,.2);
-  transition:width .3s ease;
-}
-#k1TopicCatalog .kc-topic-grid{
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:12px;
-}
-#k1TopicCatalog .kc-topic{
-  position:relative;
-  display:flex;
-  align-items:center;
-  gap:13px;
-  min-width:0;
-  min-height:84px;
-  padding:13px 15px;
-  overflow:hidden;
-  text-align:left;
-  border:1px solid rgba(112,145,184,.17);
-  border-radius:17px;
-  background:linear-gradient(145deg,#101b2b,#0e1827)!important;
-  color:#edf4ff!important;
-  box-shadow:none!important;
-  transition:transform .2s ease,border-color .2s ease,background .2s ease,box-shadow .2s ease;
-}
-#k1TopicCatalog .kc-topic:not(:disabled){
-  border-color:rgba(82,151,239,.31);
-  background:linear-gradient(145deg,#142640,#101d30)!important;
-  cursor:pointer;
-}
-#k1TopicCatalog .kc-topic:not(:disabled):hover{
-  transform:translateY(-3px);
-  border-color:rgba(91,165,255,.8);
-  background:linear-gradient(145deg,#193354,#12243b)!important;
-  box-shadow:0 12px 24px rgba(0,0,0,.18)!important;
-}
-#k1TopicCatalog .kc-topic:focus-visible{
-  outline:3px solid rgba(91,165,255,.7);
-  outline-offset:3px;
-}
-#k1TopicCatalog .kc-topic:disabled{
-  opacity:1!important;
-  filter:none!important;
-  cursor:not-allowed;
-  border-color:rgba(112,139,174,.13);
-  background:linear-gradient(145deg,#101a29,#0d1725)!important;
-}
-#k1TopicCatalog .kc-topic-num{
-  flex:none;
-  display:grid;
-  place-items:center;
-  width:42px;
-  height:42px;
-  border-radius:13px;
-  background:linear-gradient(145deg,#1d416b,#173252)!important;
-  color:#8cc4ff!important;
-  font-size:14px;
-  font-weight:950;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.07);
-}
-#k1TopicCatalog .kc-topic:disabled .kc-topic-num{
-  background:linear-gradient(145deg,#1a2a40,#172538)!important;
-  color:#607995!important;
-  box-shadow:none!important;
-}
-#k1TopicCatalog .kc-topic-copy{flex:1;min-width:0}
-#k1TopicCatalog .kc-topic-copy strong{
-  display:block;
-  overflow:hidden;
-  color:#f0f5fc!important;
-  font-size:14px;
-  font-weight:850;
-  line-height:1.35;
-  letter-spacing:-.2px;
-  text-overflow:ellipsis;
-  overflow-wrap:anywhere;
-}
-#k1TopicCatalog .kc-topic-copy small{
-  display:block;
-  margin-top:5px;
-  color:#91a9c7!important;
-  font-size:11.5px;
-  font-weight:550;
-  line-height:1.4;
-}
-#k1TopicCatalog .kc-topic:disabled .kc-topic-copy strong{color:#9aa9bd!important}
-#k1TopicCatalog .kc-topic:disabled .kc-topic-copy small{color:#718198!important}
-#k1TopicCatalog .kc-topic-status{
-  flex:none;
-  display:grid;
-  place-items:center;
-  width:28px;
-  height:28px;
-  border:1px solid rgba(90,157,245,.18);
-  border-radius:9px;
-  background:rgba(44,112,198,.14)!important;
-  color:#82bdff!important;
-  font-size:15px;
-  font-weight:900;
-}
-#k1TopicCatalog .kc-topic:disabled .kc-topic-status{
-  border-color:rgba(145,159,179,.1);
-  background:rgba(117,132,153,.09)!important;
-  color:#91a0b3!important;
-  font-size:13px;
-}
-@media(max-width:900px){
-  #k1TopicCatalog .kc-topic-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-}
-@media(max-width:600px){
-  #kiboCourseView:has(#k1TopicCatalog:not([hidden])){padding:18px 13px 35px!important}
-  #k1TopicCatalog .kc-section-head{align-items:flex-start;gap:12px;margin-bottom:17px}
-  #k1TopicCatalog .kc-section-head h2{font-size:28px}
-  #k1TopicCatalog .kc-section-head p{font-size:12px;line-height:1.55}
-  #k1TopicCatalog #k1BackBook{min-height:40px;padding:0 12px;border-radius:11px;font-size:12px}
-  #k1TopicCatalog .kc-overall-progress{padding:14px 15px;margin-bottom:14px;border-radius:15px}
-  #k1TopicCatalog .kc-topic-grid{grid-template-columns:1fr;gap:9px}
-  #k1TopicCatalog .kc-topic{min-height:75px;padding:11px 12px;border-radius:15px;gap:11px}
-  #k1TopicCatalog .kc-topic-num{width:39px;height:39px;border-radius:12px}
-  #k1TopicCatalog .kc-topic-copy strong{font-size:13px}
-  #k1TopicCatalog .kc-topic-copy small{font-size:10.5px}
-}
-@media(prefers-reduced-motion:reduce){
-  #k1TopicCatalog .kc-topic,#k1TopicCatalog #k1BackBook,#k1TopicCatalog .kc-progress-track i{transition:none!important}
-}
-</style>
-<style id="kibo-korean2-match-yonsei3-catalog">
-/* KIBO KOREAN 1 topic catalog — screenshot reference match.
-   Only presentation is changed. Existing IDs, buttons, unlock rules and JS remain untouched. */
-#kiboCourseView:has(#k2TopicCatalog:not([hidden])){
-  background:#081321!important;
-}
-#k2TopicCatalog{
-  width:min(100%,1280px);
-  max-width:1280px;
-  margin:0 auto;
-  padding:8px 0 44px;
-}
-#k2TopicCatalog .kc-section-head{
-  position:relative;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:24px;
-  margin:0 0 22px;
-  padding:0;
-  overflow:visible;
-  border:0;
-  border-radius:0;
-  background:transparent!important;
-  box-shadow:none!important;
-}
-#k2TopicCatalog .kc-section-head:after{display:none!important;content:none!important}
-#k2TopicCatalog .kc-section-head>div{min-width:0}
-#k2TopicCatalog .kc-eyebrow{
-  display:inline-flex;
-  align-items:center;
-  padding:0;
-  margin:0 0 7px;
-  background:transparent!important;
-  color:#65aaff;
-  font-size:10px;
-  font-weight:900;
-  letter-spacing:1.6px;
-}
-#k2TopicCatalog .kc-section-head h2{
-  margin:4px 0 7px;
-  color:#f4f7fc!important;
-  font-size:clamp(28px,3vw,34px);
-  line-height:1.15;
-  font-weight:900;
-  letter-spacing:-1px;
-}
-#k2TopicCatalog .kc-section-head p{
-  max-width:720px;
-  margin:0;
-  color:#9db1cd!important;
-  font-size:14px;
-  line-height:1.6;
-}
-#k2TopicCatalog #k2BackBook{
-  position:relative;
-  z-index:2;
-  flex:none;
-  min-height:46px;
-  padding:0 17px;
-  border:1px solid #29415f;
-  border-radius:13px;
-  background:#101e31!important;
-  color:#f0f5fc!important;
-  box-shadow:none!important;
-  font-size:14px;
-  font-weight:850;
-  transition:transform .2s,border-color .2s,background .2s;
-}
-#k2TopicCatalog #k2BackBook:hover{
-  transform:translateY(-2px);
-  border-color:#579bfa;
-  background:#142943!important;
-}
-#k2TopicCatalog .kc-overall-progress{
-  position:relative;
-  margin:0 0 18px;
-  padding:16px 18px;
-  border:1px solid #29415f;
-  border-radius:16px;
-  background:#101e31!important;
-  box-shadow:none!important;
-}
-#k2TopicCatalog .kc-overall-progress>div:first-child{
-  display:flex;
-  align-items:baseline;
-  gap:7px;
-  margin:0 0 10px;
-  color:#eaf1fa;
-  font-size:13px;
-  font-weight:650;
-}
-#k2TopicCatalog #k2CompletedCount{
-  color:#f5f8ff!important;
-  font-size:17px;
-  font-weight:950;
-  letter-spacing:-.3px;
-  font-variant-numeric:tabular-nums;
-}
-#k2TopicCatalog .kc-progress-track{
-  height:8px;
-  overflow:hidden;
-  border-radius:999px;
-  background:#263951!important;
-}
-#k2TopicCatalog .kc-progress-track i{
-  border-radius:999px;
-  background:linear-gradient(90deg,#287cff,#58a8ff 65%,#83c8ff)!important;
-  box-shadow:0 0 13px rgba(55,139,255,.2);
-  transition:width .3s ease;
-}
-#k2TopicCatalog .kc-topic-grid{
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:12px;
-}
-#k2TopicCatalog .kc-topic{
-  position:relative;
-  display:flex;
-  align-items:center;
-  gap:13px;
-  min-width:0;
-  min-height:84px;
-  padding:13px 15px;
-  overflow:hidden;
-  text-align:left;
-  border:1px solid rgba(112,145,184,.17);
-  border-radius:17px;
-  background:linear-gradient(145deg,#101b2b,#0e1827)!important;
-  color:#edf4ff!important;
-  box-shadow:none!important;
-  transition:transform .2s ease,border-color .2s ease,background .2s ease,box-shadow .2s ease;
-}
-#k2TopicCatalog .kc-topic:not(:disabled){
-  border-color:rgba(82,151,239,.31);
-  background:linear-gradient(145deg,#142640,#101d30)!important;
-  cursor:pointer;
-}
-#k2TopicCatalog .kc-topic:not(:disabled):hover{
-  transform:translateY(-3px);
-  border-color:rgba(91,165,255,.8);
-  background:linear-gradient(145deg,#193354,#12243b)!important;
-  box-shadow:0 12px 24px rgba(0,0,0,.18)!important;
-}
-#k2TopicCatalog .kc-topic:focus-visible{
-  outline:3px solid rgba(91,165,255,.7);
-  outline-offset:3px;
-}
-#k2TopicCatalog .kc-topic:disabled{
-  opacity:1!important;
-  filter:none!important;
-  cursor:not-allowed;
-  border-color:rgba(112,139,174,.13);
-  background:linear-gradient(145deg,#101a29,#0d1725)!important;
-}
-#k2TopicCatalog .kc-topic-num{
-  flex:none;
-  display:grid;
-  place-items:center;
-  width:42px;
-  height:42px;
-  border-radius:13px;
-  background:linear-gradient(145deg,#1d416b,#173252)!important;
-  color:#8cc4ff!important;
-  font-size:14px;
-  font-weight:950;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.07);
-}
-#k2TopicCatalog .kc-topic:disabled .kc-topic-num{
-  background:linear-gradient(145deg,#1a2a40,#172538)!important;
-  color:#607995!important;
-  box-shadow:none!important;
-}
-#k2TopicCatalog .kc-topic-copy{flex:1;min-width:0}
-#k2TopicCatalog .kc-topic-copy strong{
-  display:block;
-  overflow:hidden;
-  color:#f0f5fc!important;
-  font-size:14px;
-  font-weight:850;
-  line-height:1.35;
-  letter-spacing:-.2px;
-  text-overflow:ellipsis;
-  overflow-wrap:anywhere;
-}
-#k2TopicCatalog .kc-topic-copy small{
-  display:block;
-  margin-top:5px;
-  color:#91a9c7!important;
-  font-size:11.5px;
-  font-weight:550;
-  line-height:1.4;
-}
-#k2TopicCatalog .kc-topic:disabled .kc-topic-copy strong{color:#9aa9bd!important}
-#k2TopicCatalog .kc-topic:disabled .kc-topic-copy small{color:#718198!important}
-#k2TopicCatalog .kc-topic-status{
-  flex:none;
-  display:grid;
-  place-items:center;
-  width:28px;
-  height:28px;
-  border:1px solid rgba(90,157,245,.18);
-  border-radius:9px;
-  background:rgba(44,112,198,.14)!important;
-  color:#82bdff!important;
-  font-size:15px;
-  font-weight:900;
-}
-#k2TopicCatalog .kc-topic:disabled .kc-topic-status{
-  border-color:rgba(145,159,179,.1);
-  background:rgba(117,132,153,.09)!important;
-  color:#91a0b3!important;
-  font-size:13px;
-}
-@media(max-width:900px){
-  #k2TopicCatalog .kc-topic-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-}
-@media(max-width:600px){
-  #kiboCourseView:has(#k2TopicCatalog:not([hidden])){padding:18px 13px 35px!important}
-  #k2TopicCatalog .kc-section-head{align-items:flex-start;gap:12px;margin-bottom:17px}
-  #k2TopicCatalog .kc-section-head h2{font-size:28px}
-  #k2TopicCatalog .kc-section-head p{font-size:12px;line-height:1.55}
-  #k2TopicCatalog #k2BackBook{min-height:40px;padding:0 12px;border-radius:11px;font-size:12px}
-  #k2TopicCatalog .kc-overall-progress{padding:14px 15px;margin-bottom:14px;border-radius:15px}
-  #k2TopicCatalog .kc-topic-grid{grid-template-columns:1fr;gap:9px}
-  #k2TopicCatalog .kc-topic{min-height:75px;padding:11px 12px;border-radius:15px;gap:11px}
-  #k2TopicCatalog .kc-topic-num{width:39px;height:39px;border-radius:12px}
-  #k2TopicCatalog .kc-topic-copy strong{font-size:13px}
-  #k2TopicCatalog .kc-topic-copy small{font-size:10.5px}
-}
-@media(prefers-reduced-motion:reduce){
-  #k2TopicCatalog .kc-topic,#k2TopicCatalog #k2BackBook,#k2TopicCatalog .kc-progress-track i{transition:none!important}
-}
-</style>
-
-</head>');
+      html=html.replace('</head>','<style>html,body{width:100%;min-width:0;height:100%;overflow:auto}.app{display:block!important;width:100%!important;min-width:0!important;max-width:none!important;margin:0!important;padding:0 22px!important}.top{grid-template-columns:minmax(0,1fr)!important;height:72px!important;gap:0!important}.brand,.top-actions{display:none!important}.main{display:grid!important;width:100%!important;min-width:0!important;grid-template-columns:220px minmax(0,1fr) 275px!important;gap:18px!important;margin:16px 0 22px!important;align-items:start!important}.main>.side{grid-column:1!important;grid-row:1!important;display:block!important;position:sticky!important;top:12px!important;min-width:0!important;width:auto!important;backdrop-filter:none!important;filter:none!important;opacity:1!important}.main>.study{grid-column:2!important;grid-row:1!important;display:block!important;width:auto!important;min-width:0!important;max-width:none!important;min-height:calc(100vh - 125px)!important;padding:26px 24px!important}.main>.right-panel{grid-column:3!important;grid-row:1!important;display:block!important;min-width:0!important;width:auto!important;max-width:none!important}.flashcard{min-height:310px!important}.word,.answer{font-size:64px!important}@media(max-width:1100px){.main{grid-template-columns:190px minmax(0,1fr)!important;gap:12px!important}.main>.right-panel{display:none!important}.main>.study{grid-column:2!important;padding:18px 12px!important}.flashcard{min-height:260px!important}}@media(max-width:650px){.app{padding:0 10px!important}.main{grid-template-columns:minmax(0,1fr)!important}.main>.side{display:none!important}.main>.study{grid-column:1!important;padding:18px 12px!important}.flashcard{min-height:240px!important}}</style></head>');
       frame.srcdoc=html;
     });list.appendChild(row);
    }
@@ -6591,16 +6572,16 @@ body,.side,.study,.right-panel,.picker-card,#kiboSideNav,#kiboMobileNav,.flash-f
       <button type="button" class="kc-close-course" id="kcExitCourse">✕ Chiqish</button>
     </header>
     <div class="kc-course-list" id="kcBookLanding">
-    <section class="kc-book" id="kcYonsei3BookCard" data-kibo-course-card="yonsei3" hidden>
+    <section class="kc-book" id="kcYonsei3BookCard">
       <div class="kc-book-icon">Y3</div><div class="kc-book-copy"><span class="kc-eyebrow">FOUNDATION</span><h2>Yonsei 3</h2><p>30 ta mavzu · Matn · So‘z yodlash · Yozma test</p></div>
       <button type="button" class="kc-primary" id="kcOpenBook">Kursni ochish →</button>
     </section>
-    <section class="kc-book" id="k1BookCard" data-kibo-course-card="kiboKorean1" hidden>
+    <section class="kc-book" id="k1BookCard">
       <div class="kc-book-icon">K1</div><div class="kc-book-copy"><span class="kc-eyebrow">BEGINNER · KIBO</span><h2>KIBO Korean 1</h2><p>20 ta mavzu · Mavzuli lug‘at · So‘z yodlash · Test</p></div>
       <button type="button" class="kc-primary" id="k1OpenBook">Kursni ochish →</button>
     </section>
-<section class="kc-book" id="k2BookCard" data-kibo-course-card="kiboKorean2" hidden>
-      <div class="kc-book-icon">K2</div><div class="kc-book-copy"><span class="kc-eyebrow">ELEMENTARY · KIBO</span><h2>KIBO Korean 2</h2><p>18 ta mavzu · Mavzuli lug‘at · So‘z yodlash · Test</p></div>
+<section class="kc-book" id="k2BookCard">
+      <div class="kc-book-icon">K1</div><div class="kc-book-copy"><span class="kc-eyebrow">ELEMENTARY · KIBO</span><h2>KIBO Korean 2</h2><p>18 ta mavzu · Mavzuli lug‘at · So‘z yodlash · Test</p></div>
       <button type="button" class="kc-primary" id="k2OpenBook">Kursni ochish →</button>
     </section>
   </div>
@@ -6864,7 +6845,7 @@ $('kcDictationFile').addEventListener('change',async e=>{const incoming=Array.fr
 $('kcRemoveDictation').addEventListener('click',async()=>{await deleteDictation(dictationKey());$('kcDictationFile').value='';await showDictationDraft();});
 $('kcContinueDictation').addEventListener('click',async()=>{if(!currentTopic)return;const files=await getDictation(dictationKey());if(!files.length){$('kcDictationStatus').textContent='Davom etishdan oldin kamida bitta diktant rasmini tanlang.';return;}const isRejectedRetake=(progress.rejected||[]).some(x=>Number(x.topicNumber)===currentTopic.n);if(isRejectedRetake){$('kcContinueDictation').disabled=true;$('kcContinueDictation').textContent='Diktant yuborilmoqda…';await completeTopic();$('kcContinueDictation').disabled=false;$('kcContinueDictation').textContent='Yangi diktantni yuborish →';return;}saveActive('memorize',{indices:currentTopic.vocab.map((_,i)=>i),stage:1,index:0});startNativeMemorize(currentTopic.vocab.map((_,i)=>i),1,0);});
 // Navigation isolation: course is its own full-screen view and never leaves the word-study stage mounted elsewhere.
-document.addEventListener('click',e=>{const nav=e.target.closest&&e.target.closest('[data-nav]');if(!nav)return;const key=nav.getAttribute('data-nav');if(key==='course'){e.preventDefault();e.stopImmediatePropagation();if(!window.kiboCourseAccess||!Object.values(window.kiboCourseAccess).some(Boolean)){return;}openCourse();return;}if(root&&!root.hidden)closeCourse();},true);
+document.addEventListener('click',e=>{const nav=e.target.closest&&e.target.closest('[data-nav]');if(!nav)return;const key=nav.getAttribute('data-nav');if(key==='course'){e.preventDefault();e.stopImmediatePropagation();openCourse();return;}if(root&&!root.hidden)closeCourse();},true);
 // Kurs ochiq turganda boshqa qurilmadagi o'qituvchi qarorlarini qayta tekshirish.
 let yonseiProgressRefreshBusy=false;
 async function refreshYonseiWhenVisible(){if(yonseiProgressRefreshBusy||document.hidden||!root||root.hidden)return;yonseiProgressRefreshBusy=true;try{await refreshServerProgress();}finally{yonseiProgressRefreshBusy=false;}}
@@ -7231,7 +7212,7 @@ $('k2NextTopic').addEventListener('click',()=>{if(!current)return;const n=curren
 $('kcExitCourse').addEventListener('click',()=>{if(!modal.hidden)closeLesson();catalog.hidden=true;courseList.hidden=true;});
 $('kcOpenBook').addEventListener('click',()=>{catalog.hidden=true;courseList.hidden=true;});
 document.addEventListener('click',e=>{const nav=e.target.closest&&e.target.closest('[data-nav="course"]');if(nav){catalog.hidden=true;modal.hidden=true;courseList.hidden=false;}},true);
-window.kiboOpenKorean2Course=()=>{root.hidden=false;root.style.display='block';document.body.classList.add('kc-course-open');courseList.hidden=false;catalog.hidden=true;modal.hidden=true;renderProgress();};
+window.kiboOpenKorean1Course=()=>{root.hidden=false;root.style.display='block';document.body.classList.add('kc-course-open');courseList.hidden=false;catalog.hidden=true;modal.hidden=true;renderProgress();};
 window.kiboRenderKorean2Progress=renderProgress;window.kiboCloseKorean2Lesson=closeLesson;
 renderProgress();
 })();
@@ -7507,35 +7488,6 @@ body:not(.night) #k2LessonModal .kc-error{
 </style>
 
 
-<script id="kibo-course-card-navigation-fix">
-(function(){
- 'use strict';
- const $=id=>document.getElementById(id);
- const root=$('kiboCourseView'), landing=$('kcBookLanding');
- if(!root||!landing)return;
- const catalogs=['kcTopicCatalog','k1TopicCatalog','k2TopicCatalog'];
- function openCatalog(id){
-  root.hidden=false;root.style.display='block';
-  document.body.classList.add('kc-course-open');
-  landing.hidden=true;
-  catalogs.forEach(x=>{const el=$(x);if(el)el.hidden=x!==id;});
-  const modalIds=['kcLessonModal','k1LessonModal','k2LessonModal'];
-  modalIds.forEach(x=>{const el=$(x);if(el)el.hidden=true;});
-  root.classList.add('kc-catalog-only');
-  if(id==='k2TopicCatalog'&&typeof window.kiboRenderKorean2Progress==='function')window.kiboRenderKorean2Progress();
-  window.scrollTo({top:0,behavior:'auto'});
- }
- const routes={kcOpenBook:'kcTopicCatalog',k1OpenBook:'k1TopicCatalog',k2OpenBook:'k2TopicCatalog'};
- document.addEventListener('click',function(e){
-  const button=e.target&&e.target.closest?e.target.closest('#kcOpenBook,#k1OpenBook,#k2OpenBook'):null;
-  if(!button)return;
-  const target=routes[button.id];if(!target)return;
-  e.preventDefault();e.stopImmediatePropagation();openCatalog(target);
- },true);
-})();
-</script>
-</body>
-
 <style id="book2b-holo-card-styles">
 /* 2B uses the same book-card layout as 2A/1A/1B, with its warm orange accent. */
 #book2BCategoryToggle.book1a-holo-category{
@@ -7579,7 +7531,6 @@ body:not(.night) #k2LessonModal .kc-error{
 })();
 </script>
 
-</html>
 <style id="kibo-category-page-compact-final-fix">
 #kiboSectionsView.kibo-category-page-open{min-height:0!important;height:auto!important;padding-top:8px!important;align-content:start!important;justify-content:flex-start!important;gap:0!important}
 #kiboSectionsView.kibo-category-page-open > .kibo-category-back{display:inline-flex!important;position:relative!important;align-self:flex-start!important;margin:0 0 14px!important;visibility:visible!important}
@@ -7836,81 +7787,32 @@ body.night #kiboTelegramGate .kibo-tg-dialog,body.dark #kiboTelegramGate .kibo-t
 })();
 </script>
 
-<script id="kibo-course-access-control">
-(()=>{'use strict';
-  const $=id=>document.getElementById(id);
-  const COURSE_KEYS=['yonsei3','kiboKorean1','kiboKorean2'];
-  const COURSE_LABELS={yonsei3:'Yonsei 3',kiboKorean1:'KIBO Korean 1',kiboKorean2:'KIBO Korean 2'};
-  const navButtons=[...document.querySelectorAll('[data-nav="course"]')];
-  const cards=[...document.querySelectorAll('[data-kibo-course-card]')];
-  let db=null, auth=null, currentUser=null, isTeacher=false, accessReady=false;
-  window.kiboCourseAccess={yonsei3:false,kiboKorean1:false,kiboKorean2:false};
 
-  function showNav(show){navButtons.forEach(b=>b.style.display=show?'':'none');}
-  function applyAccess(access){
-    window.kiboCourseAccess={yonsei3:access.yonsei3===true,kiboKorean1:access.kiboKorean1===true,kiboKorean2:access.kiboKorean2===true};
-    cards.forEach(card=>{const key=card.dataset.kiboCourseCard;card.hidden=window.kiboCourseAccess[key]!==true;});
-    const any=COURSE_KEYS.some(k=>window.kiboCourseAccess[k]);
-    showNav(any);
-    accessReady=true;
-    if(!any){
-      const root=$('kiboCourseView');
-      if(root&&!root.hidden&&typeof window.kiboCloseCourse==='function')window.kiboCloseCourse();
-    }
-  }
-  function status(message,error=false){
-    const el=$('kiboCourseAccessStatus');
-    if(el){el.textContent=message;el.style.color=error?'#dc3545':'var(--muted)';}
-  }
-  async function getStudentByEmail(){
-    if(!isTeacher||!db)throw new Error('O‘qituvchi ruxsati tasdiqlanmagan.');
-    const email=($('kiboCourseStudentEmail')?.value||'').trim().toLowerCase();
-    if(!email)throw new Error('O‘quvchi emailini kiriting.');
-    const snap=await db.collection('users').where('accountEmail','==',email).limit(1).get();
-    if(snap.empty)throw new Error('Bu email bilan ro‘yxatdan o‘tgan o‘quvchi topilmadi. O‘quvchi avval saytga Google orqali kirishi kerak.');
-    return {uid:snap.docs[0].id,email};
-  }
-  async function changeSelected(grant){
-    try{
-      if(!isTeacher)throw new Error('Bu amal faqat tasdiqlangan o‘qituvchi uchun.');
-      const selected=COURSE_KEYS.filter(k=>$('kiboGrant'+({yonsei3:'Yonsei3',kiboKorean1:'Kibo1',kiboKorean2:'Kibo2'}[k]))?.checked);
-      if(!selected.length)throw new Error('Kamida bitta kursni tanlang.');
-      status('O‘quvchi qidirilmoqda…');
-      const student=await getStudentByEmail();
-      const ref=db.collection('kiboCourseAccess').doc(student.uid);
-      const patch={uid:student.uid,email:student.email,grantedBy:currentUser.uid,updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
-      selected.forEach(k=>patch[k]=grant);
-      await ref.set(patch,{merge:true});
-      status(student.email+' uchun '+selected.map(k=>COURSE_LABELS[k]).join(', ')+(grant?' kurslariga ruxsat berildi.':' kurslariga ruxsat olib tashlandi.'));
-    }catch(e){console.error('Course access update failed',e);status(e.message||'Ruxsatni yangilab bo‘lmadi.',true);}
-  }
-  $('kiboCourseGrantSelected')?.addEventListener('click',()=>changeSelected(true));
-  $('kiboCourseRevokeSelected')?.addEventListener('click',()=>changeSelected(false));
+<!-- KIBO KOREAN 1/2: return to the page that was open before entering Courses -->
+<script id="kibo-k1-k2-return-previous-page-fix">
+(function(){
+  'use strict';
+  var previousNav = null;
+  // Capture the currently active navigation item before the app switches to Courses.
+  document.addEventListener('click', function(event){
+    var courseNav = event.target && event.target.closest ? event.target.closest('[data-nav="course"]') : null;
+    if (!courseNav) return;
+    var active = document.querySelector('.nav-link.active[data-nav]:not([data-nav="course"])');
+    if (active) previousNav = active;
+  }, true);
 
-  async function onUser(user){
-    currentUser=user||null;isTeacher=false;accessReady=false;applyAccess({});
-    if(!user||!db){showNav(false);return;}
-    try{
-      const profile=await db.collection('teacherProfiles').doc(user.uid).get();
-      isTeacher=profile.exists&&profile.data().active===true;
-      if(isTeacher){applyAccess({yonsei3:true,kiboKorean1:true,kiboKorean2:true});return;}
-      const snap=await db.collection('kiboCourseAccess').doc(user.uid).get();
-      applyAccess(snap.exists?snap.data():{});
-    }catch(e){
-      console.error('Course access check failed',e);
-      applyAccess({});
-      showNav(false);
-    }
+  function returnToPreviousPage(event){
+    var button = event.target && event.target.closest ? event.target.closest('#k1BackBook, #k2BackBook') : null;
+    if (!button) return;
+    if (!previousNav || !document.contains(previousNav)) return; // keep the original fallback if no previous page was recorded
+    event.preventDefault();
+    event.stopPropagation();
+    if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+    previousNav.click();
   }
-  function init(){
-    if(!window.firebase||!firebase.auth||!firebase.firestore)return;
-    try{
-      if(!firebase.apps||!firebase.apps.length)return;
-      auth=firebase.auth();db=firebase.firestore();
-      auth.onAuthStateChanged(onUser);
-    }catch(e){console.error('Course access initialization failed',e);showNav(false);}
-  }
-  init();
+  document.addEventListener('click', returnToPreviousPage, true);
 })();
 </script>
 
+</body>
+</html>
