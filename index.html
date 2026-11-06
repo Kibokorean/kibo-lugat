@@ -6222,7 +6222,7 @@ async function renderTest(){
   e.preventDefault();if(testState.checked)return;const btn=form.querySelector('button');btn.disabled=true;btn.textContent='Server tekshiryapti…';
   try{const fn=firebase.app().functions('us-east1').httpsCallable('submitYonsei3WrittenTestAnswer');const requestId=testState.pendingAnswerRequestId||(testState.pendingAnswerRequestId=(crypto.randomUUID?crypto.randomUUID():('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16);} ))));const res=await fn({sessionId:testState.sessionId,answer:input.value,expectedPosition:testState.position,requestId});const data=res.data||{};testState.pendingAnswerRequestId='';testState.checked=true;testState.lastCorrect=!!data.correct;testState.lastAnswer=input.value;if(!data.correct&&!testState.wrong.includes(testState.indices[testState.position]))testState.wrong.push(testState.indices[testState.position]);
    const feedback=$('kcFeedback'),correct=$('kcCorrectAnswer');feedback.textContent=data.correct?'✓ Server tasdiqladi: to‘g‘ri javob':'✕ Server tekshiruvi: noto‘g‘ri javob';feedback.className='kc-feedback '+(data.correct?'good':'bad');if(!data.correct){correct.hidden=false;correct.textContent='To‘g‘ri javob: '+data.correctAnswer;}
-   input.disabled=true;btn.textContent='Javob serverda qabul qilindi';const next=document.createElement('button');next.type='button';next.className='kc-primary kc-test-submit';next.textContent='Keyingi so‘z →';card.appendChild(next);next.addEventListener('click',()=>{testState.position++;testState.checked=false;saveActive('test',{test:testState});renderTest();});saveActive('test',{test:testState});input.blur();
+   input.disabled=true;btn.textContent='Javob serverda qabul qilindi';const next=document.createElement('button');next.type='button';next.className='kc-primary kc-test-submit';next.textContent='Keyingi so‘z →';card.appendChild(next);next.addEventListener('click',()=>{testState.position++;testState.checked=false;saveActive('test',{test:testState});renderTest();});saveActive('test',{test:testState});input.blur();next.focus();
   }catch(error){btn.disabled=false;btn.textContent='Qayta urinish';$('kcFeedback').textContent='Server xatosi: '+(error.message||error);$('kcFeedback').className='kc-feedback bad';}
  });input.focus();
 }
@@ -6442,6 +6442,7 @@ function renderTest(){
   const btn=form.querySelector('button');btn.hidden=true;
   const next=document.createElement('button');next.type='button';next.className='kc-primary kc-test-submit';next.textContent='Keyingi so‘z →';form.appendChild(next);
   next.addEventListener('click',()=>{test.position++;test.checked=false;renderTest();});
+  next.focus();
  });
  input.focus();
 }
@@ -6674,6 +6675,7 @@ function renderTest(){
   const btn=form.querySelector('button');btn.hidden=true;
   const next=document.createElement('button');next.type='button';next.className='kc-primary kc-test-submit';next.textContent='Keyingi so‘z →';form.appendChild(next);
   next.addEventListener('click',()=>{test.position++;test.checked=false;renderTest();});
+  next.focus();
  });
  input.focus();
 }
