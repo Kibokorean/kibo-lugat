@@ -6890,21 +6890,30 @@ body:not(.night) #k2LessonModal .kc-error{
       ? event.target.closest('#k1BackBook, #k2BackBook')
       : null;
     if (!button) return;
-
-    // These buttons must return to the in-app "Kurslar" list,
-    // not the browser's previous history entry.
     event.preventDefault();
     event.stopImmediatePropagation();
 
-    const k1Catalog = document.getElementById('k1TopicCatalog');
-    const k2Catalog = document.getElementById('k2TopicCatalog');
-    const bookLanding = document.getElementById('kcBookLanding');
+    // Re-open the complete course landing container through its own
+    // initializer; toggling only the inner list can leave the page blank.
+    const isK1 = button.id === 'k1BackBook';
+    const reopen = isK1
+      ? window.kiboOpenKorean1Course
+      : window.kiboOpenKorean2Course;
 
-    if (k1Catalog) k1Catalog.hidden = true;
-    if (k2Catalog) k2Catalog.hidden = true;
-    if (bookLanding) bookLanding.hidden = false;
-
-    // Keep the course area selected and restore its scroll position.
+    if (typeof reopen === 'function') {
+      reopen();
+    } else {
+      // Fallback if the course initializer is unavailable.
+      const root = document.querySelector('.kc-shell')?.parentElement;
+      const landing = document.getElementById('kcBookLanding');
+      const k1 = document.getElementById('k1TopicCatalog');
+      const k2 = document.getElementById('k2TopicCatalog');
+      if (root) { root.hidden = false; root.style.display = 'block'; }
+      if (landing) landing.hidden = false;
+      if (k1) k1.hidden = true;
+      if (k2) k2.hidden = true;
+      document.body.classList.add('kc-course-open');
+    }
     document.querySelectorAll('[data-nav]').forEach(nav => {
       nav.classList.toggle('active', nav.dataset.nav === 'course');
     });
