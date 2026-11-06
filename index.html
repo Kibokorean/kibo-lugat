@@ -7247,27 +7247,69 @@ body.night #kiboTelegramGate .kibo-tg-dialog,body.dark #kiboTelegramGate .kibo-t
   const $=id=>document.getElementById(id);
   const COURSE_KEYS=['yonsei3','kiboKorean1','kiboKorean2'];
   const COURSE_LABELS={yonsei3:'Yonsei 3',kiboKorean1:'KIBO Korean 1',kiboKorean2:'KIBO Korean 2'};
-  const navButtons=[...document.querySelectorAll('[data-nav="course"]')];
+  const CHECKBOX_IDS={yonsei3:'kiboGrantYonsei3',kiboKorean1:'kiboGrantKibo1',kiboKorean2:'kiboGrantKibo2'};
   const cards=[...document.querySelectorAll('[data-kibo-course-card]')];
-  let db=null, auth=null, currentUser=null, isTeacher=false, accessReady=false;
-  window.kiboCourseAccess={yonsei3:false,kiboKorean1:false,kiboKorean2:false};
+  const navButtons=[...document.querySelectorAll('[data-nav="course"]')];
+  let db=null,auth=null,currentUser=null,isTeacher=false,accessReady=false;
+  let access={yonsei3:false,kiboKorean1:false,kiboKorean2:false};
+  window.kiboCourseAccess=access;
+  window.kiboCourseAccessReady=false;
 
+  function showStatus(message,error=false){
+    const el=$('kiboCourseAccessStatus');
+    if(el){el.textContent=message;el.style.color=error?'#dc3545':'var(--muted)';}
+  }
   function showNav(show){navButtons.forEach(b=>b.style.display=show?'':'none');}
-  function applyAccess(access){
-    window.kiboCourseAccess={yonsei3:access.yonsei3===true,kiboKorean1:access.kiboKorean1===true,kiboKorean2:access.kiboKorean2===true};
-    cards.forEach(card=>{const key=card.dataset.kiboCourseCard;card.hidden=window.kiboCourseAccess[key]!==true;});
-    const any=COURSE_KEYS.some(k=>window.kiboCourseAccess[k]);
+  function normalize(data){const out={};COURSE_KEYS.forEach(k=>out[k]=data?.[k]===true);return out;}
+  function applyAccess(data){
+    access=normalize(data);window.kiboCourseAccess=access;
+    accessReady=true;window.kiboCourseAccessReady=true;
+    cards.forEach(card=>{
+      const key=card.dataset.kiboCourseCard;
+      const allowed=isTeacher||access[key]===true;
+      card.hidden=!allowed;
+      card.setAttribute('aria-hidden',String(!allowed));
+    });
+    const any=isTeacher||COURSE_KEYS.some(k=>access[k]);
     showNav(any);
-    accessReady=true;
     if(!any){
       const root=$('kiboCourseView');
       if(root&&!root.hidden&&typeof window.kiboCloseCourse==='function')window.kiboCloseCourse();
     }
   }
-  function status(message,error=false){
-    const el=$('kiboCourseAccessStatus');
-    if(el){el.textContent=message;el.style.color=error?'#dc3545':'var(--muted)';}
+  function canOpen(key){return !!currentUser&&accessReady&&(isTeacher||access[key]===true);}
+  function deny(key){
+    const label=COURSE_LABELS[key]||'Bu kurs';
+    let box=$('kiboCourseAccessDeniedNotice');
+    if(!box){box=document.createElement('div');box.id='kiboCourseAccessDeniedNotice';box.setAttribute('role','alert');box.style.cssText='position:fixed;z-index:2147483647;left:50%;top:18px;transform:translateX(-50%);width:min(440px,calc(100vw - 28px));padding:14px 18px;border:1px solid #f0b4b4;border-radius:14px;background:#fff1f2;color:#9f1239;box-shadow:0 12px 32px rgba(0,0,0,.18);font:700 14px/1.5 system-ui,sans-serif;text-align:center';document.body.appendChild(box);}
+    box.textContent=!currentUser?'Kursga kirish uchun avval hisobingizga kiring.':!accessReady?'Kurs ruxsati tekshirilmoqda. Biroz kuting.':label+' uchun sizga ruxsat berilmagan.';
+    box.hidden=false;clearTimeout(box._hideTimer);box._hideTimer=setTimeout(()=>{box.hidden=true;},3800);
   }
+  function guardClick(event){
+    const button=event.target?.closest?.('#kcOpenBook,#k1OpenBook,#k2OpenBook');
+    if(!button)return;
+    const key=button.id==='kcOpenBook'?'yonsei3':button.id==='k1OpenBook'?'kiboKorean1':'kiboKorean2';
+    if(!canOpen(key)){
+      event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();deny(key);
+    }
+  }
+  // Capture phase blocks all existing/duplicate course-launch click handlers before they run.
+  document.addEventListener('click',guardClick,true);
+
+  // Also guard direct JavaScript launch calls used by older navigation/profile handlers.
+  function wrapLaunch(name,key){
+    const original=window[name];
+    if(typeof original!=='function'||original.__kiboAccessWrapped)return;
+    const guarded=function(...args){if(!canOpen(key)){deny(key);return false;}return original.apply(this,args);};
+    guarded.__kiboAccessWrapped=true;window[name]=guarded;
+  }
+  function wrapLaunchers(){
+    wrapLaunch('kiboOpenKorean1Course','kiboKorean1');
+    wrapLaunch('kiboOpenKorean2Course','kiboKorean2');
+    wrapLaunch('kiboOpenYonsei3Course','yonsei3');
+  }
+  wrapLaunchers();
+
   async function getStudentByEmail(){
     if(!isTeacher||!db)throw new Error('O‘qituvchi ruxsati tasdiqlanmagan.');
     const email=($('kiboCourseStudentEmail')?.value||'').trim().toLowerCase();
@@ -7279,42 +7321,45 @@ body.night #kiboTelegramGate .kibo-tg-dialog,body.dark #kiboTelegramGate .kibo-t
   async function changeSelected(grant){
     try{
       if(!isTeacher)throw new Error('Bu amal faqat tasdiqlangan o‘qituvchi uchun.');
-      const selected=COURSE_KEYS.filter(k=>$('kiboGrant'+({yonsei3:'Yonsei3',kiboKorean1:'Kibo1',kiboKorean2:'Kibo2'}[k]))?.checked);
+      const selected=COURSE_KEYS.filter(k=>$(CHECKBOX_IDS[k])?.checked);
       if(!selected.length)throw new Error('Kamida bitta kursni tanlang.');
-      status('O‘quvchi qidirilmoqda…');
+      showStatus('O‘quvchi qidirilmoqda…');
       const student=await getStudentByEmail();
       const ref=db.collection('kiboCourseAccess').doc(student.uid);
       const patch={uid:student.uid,email:student.email,grantedBy:currentUser.uid,updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
-      selected.forEach(k=>patch[k]=grant);
+      // Grant means SET THE COMPLETE ACCESS LIST: unchecked courses are explicitly denied.
+      // Revoke means remove access only from the checked courses, preserving the rest.
+      if(grant)COURSE_KEYS.forEach(k=>patch[k]=selected.includes(k));
+      else selected.forEach(k=>patch[k]=false);
       await ref.set(patch,{merge:true});
-      status(student.email+' uchun '+selected.map(k=>COURSE_LABELS[k]).join(', ')+(grant?' kurslariga ruxsat berildi.':' kurslariga ruxsat olib tashlandi.'));
-    }catch(e){console.error('Course access update failed',e);status(e.message||'Ruxsatni yangilab bo‘lmadi.',true);}
+      const action=grant?'ruxsat berildi':'ruxsat olib tashlandi';
+      showStatus(student.email+' uchun '+(grant?COURSE_KEYS.filter(k=>selected.includes(k)).map(k=>COURSE_LABELS[k]).join(', '):selected.map(k=>COURSE_LABELS[k]).join(', '))+' — '+action+'.'+(grant?' Boshqa kurslar yopildi.':''));
+    }catch(e){console.error('Course access update failed',e);showStatus(e.message||'Ruxsatni yangilab bo‘lmadi.',true);}
   }
   $('kiboCourseGrantSelected')?.addEventListener('click',()=>changeSelected(true));
   $('kiboCourseRevokeSelected')?.addEventListener('click',()=>changeSelected(false));
 
   async function onUser(user){
-    currentUser=user||null;isTeacher=false;accessReady=false;applyAccess({});
+    currentUser=user||null;isTeacher=false;accessReady=false;window.kiboCourseAccessReady=false;
+    applyAccess({});
+    accessReady=false;window.kiboCourseAccessReady=false;
     if(!user||!db){showNav(false);return;}
     try{
-      const profile=await db.collection('teacherProfiles').doc(user.uid).get();
+      const profile=await db.collection('teacherProfiles').doc(user.uid).get({source:'server'});
       isTeacher=profile.exists&&profile.data().active===true;
-      if(isTeacher){applyAccess({yonsei3:true,kiboKorean1:true,kiboKorean2:true});return;}
-      const snap=await db.collection('kiboCourseAccess').doc(user.uid).get();
+      if(isTeacher){applyAccess({yonsei3:true,kiboKorean1:true,kiboKorean2:true});wrapLaunchers();return;}
+      const snap=await db.collection('kiboCourseAccess').doc(user.uid).get({source:'server'});
       applyAccess(snap.exists?snap.data():{});
+      wrapLaunchers();
     }catch(e){
       console.error('Course access check failed',e);
-      applyAccess({});
-      showNav(false);
+      applyAccess({});showNav(false);
     }
   }
   function init(){
     if(!window.firebase||!firebase.auth||!firebase.firestore)return;
-    try{
-      if(!firebase.apps||!firebase.apps.length)return;
-      auth=firebase.auth();db=firebase.firestore();
-      auth.onAuthStateChanged(onUser);
-    }catch(e){console.error('Course access initialization failed',e);showNav(false);}
+    try{if(!firebase.apps||!firebase.apps.length)return;auth=firebase.auth();db=firebase.firestore();auth.onAuthStateChanged(onUser);}
+    catch(e){console.error('Course access initialization failed',e);applyAccess({});showNav(false);}
   }
   init();
 })();
