@@ -6881,6 +6881,41 @@ body:not(.night) #k2LessonModal .kc-error{
  $('kiboProgressRefresh')?.addEventListener('click',()=>{});
 })();
 </script>
+
+<script id="kibo-k1-k2-back-to-previous-page-fix">
+(() => {
+  'use strict';
+  function returnToPreviousPage(courseId) {
+    const catalog = document.getElementById(courseId === 'k1' ? 'k1TopicCatalog' : 'k2TopicCatalog');
+    const landing = document.getElementById('kcBookLanding');
+    // If this course was reached from another page on this site, return to that page.
+    let sameSiteReferrer = false;
+    try {
+      sameSiteReferrer = !!document.referrer &&
+        new URL(document.referrer).origin === window.location.origin;
+    } catch (_) {}
+    if (sameSiteReferrer && window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+    // Safe fallback for direct opens / refreshed tabs: return to the course list.
+    if (catalog) catalog.hidden = true;
+    if (landing) landing.hidden = false;
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }
+
+  document.addEventListener('click', function (event) {
+    const button = event.target && event.target.closest
+      ? event.target.closest('#k1BackBook, #k2BackBook')
+      : null;
+    if (!button) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    returnToPreviousPage(button.id === 'k1BackBook' ? 'k1' : 'k2');
+  }, true);
+})();
+</script>
+
 </body>
 
 <style id="book2b-holo-card-styles">
