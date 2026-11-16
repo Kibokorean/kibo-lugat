@@ -6087,7 +6087,7 @@ async function uploadFinalDictation(){
  try{
   const submit=firebase.app().functions('us-east1').httpsCallable('submitYonsei3Dictation');
   await submit({batchId,topicNumber:currentTopic.n,writtenTestSessionId:window.kiboYonseiPassedTestSession||''});
- }catch(error){await cleanup();throw new Error(error.message||'Server topshiriqni tasdiqlay olmadi.');}
+ }catch(error){throw new Error(error.message||'Server topshiriqni tasdiqlay olmadi. Rasmlar serverda tekshirilishi uchun saqlab qolindi; holatni tekshirmasdan qayta yubormang.');}
  await deleteDictation(dictationKey());
  window.kiboYonseiPassedTestSession='';
  return true;
@@ -6227,11 +6227,14 @@ async function renderTest(){
  });input.focus();
 }
 async function finishTestRound(){
+ if(!testState||!testState.sessionId||testState.finishing)return;
+ testState.finishing=true;
+ const finishingSessionId=testState.sessionId;
  const finish=firebase.app().functions('us-east1').httpsCallable('finishYonsei3WrittenTest');
- try{const result=await finish({sessionId:testState.sessionId});const data=result.data||{};window.kiboYonseiPreviousTestSession=testState.sessionId;
+ try{const result=await finish({sessionId:finishingSessionId});const data=result.data||{};window.kiboYonseiPreviousTestSession=finishingSessionId;
   if(!data.passed){const wrong=[...new Set((data.wrongIndices||[]).map(Number))];window.kiboYonsei3RepeatWords=wrong.map(i=>({ko:String(currentTopic.vocab[i]?.front||''),uz:String(currentTopic.vocab[i]?.back||''),topicNumber:currentTopic.n,topicTitle:currentTopic.title}));save();const msg=wrong.length+' ta so‘z noto‘g‘ri topildi. Ularni 3-bosqichda qayta yodlang, 4-bosqichda xotiradan tekshiring va so‘ng faqat shu so‘zlardan yozma testni qayta ishlang.';writtenRetryIndices=wrong.slice();const stage=3;testState=null;const oldNotice=$('kcWrongNotice');if(oldNotice)oldNotice.remove();saveActive('memorize',{indices:wrong,stage:stage+1,index:0});startNativeMemorize(wrong,stage,0);$('kcMemorizeTag').textContent=stage+'-BOSQICH · XATO SO‘ZLARNI QAYTA YODLASH';$('kcStageMemorize').insertAdjacentHTML('afterbegin','<p class="kc-error" id="kcWrongNotice">'+escapeHTML(msg)+'</p>');return;}
-  window.kiboYonseiPassedTestSession=testState.sessionId;window.kiboYonseiPreviousTestSession='';completeTopic();
- }catch(error){$('kcTestCard').insertAdjacentHTML('beforeend','<p class="kc-error">Test yakunini server tasdiqlay olmadi: '+escapeHTML(error.message||error)+'</p>');}
+  window.kiboYonseiPassedTestSession=finishingSessionId;window.kiboYonseiPreviousTestSession='';await completeTopic();
+ }catch(error){if(testState&&testState.sessionId===finishingSessionId)testState.finishing=false;const card=$('kcTestCard');if(card&&!card.querySelector('[data-test-finish-error="true"]')){const notice=document.createElement('p');notice.className='kc-error';notice.dataset.testFinishError='true';notice.textContent='Test yakunini server tasdiqlay olmadi: '+(error.message||error);card.appendChild(notice);}}
 }
 async function completeTopic(){if(!currentTopic)return;window.kiboYonsei3RepeatWords=[];const n=currentTopic.n;const stagedPhotos=await getDictation(dictationKey());if(!stagedPhotos.length){setStage('dictation');$('kcDictationStatus').textContent='Mavzuni yakunlash uchun diktant rasmini yuklashingiz shart. Rasm yuborilmaguncha mavzu tugallangan hisoblanmaydi va keyingi mavzu ochilmaydi.';saveActive('dictation');return;}try{const status=$('kcCompleteText');status.textContent='Diktant rasmlari serverga yuborilmoqda…';await uploadFinalDictation();}catch(error){setStage('dictation');$('kcDictationStatus').textContent='Yuborishda xatolik: '+(error.message||error);saveActive('dictation');return;}progress.active=null;save();await refreshServerProgress();setStage('complete');$('kcCompleteTitle').textContent=n+'-mavzu muvaffaqiyatli tugatildi!';$('kcCompleteText').textContent='Barcha diktant rasmlaringiz bitta topshiriq sifatida serverga muvaffaqiyatli yuborildi. Mavzu tugallangan hisoblandi va keyingi mavzu ochildi. O‘qituvchi diktantni keyinroq tekshiradi. Agar rad etsa, saytga kirganingizda xabar olasiz va ushbu mavzuni qayta topshirishingiz kerak bo‘ladi.';$('kcNextTopic').hidden=n>=30;$('kcReturnCatalog').hidden=false;renderProgress();}
 function goNextTopic(){if(!currentTopic)return;const n=currentTopic.n;if(!isTopicComplete(n))return;closeLesson();if(n<30)openTopic(n+1);else{$('kcTopicCatalog').hidden=false;$('kcBookLanding').hidden=true;}}

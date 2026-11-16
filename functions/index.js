@@ -63,8 +63,14 @@ function isValidStoredDictationPath(storagePath, uid, topicNumber) {
   if (typeof storagePath !== "string" || typeof uid !== "string") return false;
   const prefix = `dictations/${uid}/`;
   if (!storagePath.startsWith(prefix) || storagePath.includes("..") || storagePath.includes("\\")) return false;
-  const fileName = storagePath.slice(prefix.length);
-  return new RegExp(`^yonsei3-lesson-${Number(topicNumber)}-[0-9]+\\.(jpg|png|webp)$`).test(fileName);
+  const relative = storagePath.slice(prefix.length);
+  const legacy = new RegExp(`^yonsei3-lesson-${Number(topicNumber)}-[0-9]+\\.(jpg|png|webp)$`);
+  const batched = new RegExp(`^yonsei3-lesson-${Number(topicNumber)}-[a-f0-9-]{36}/[a-f0-9-]{36}\\.(jpg|png|webp)$`, "i");
+  return legacy.test(relative) || batched.test(relative);
+}
+
+function isValidBatchId(value) {
+  return typeof value === "string" && /^[a-f0-9-]{36}$/i.test(value);
 }
 
 function hasCanonicalSubmissionIdentity(submissionId, data) {
@@ -169,56 +175,115 @@ exports.finishYonsei3WrittenTest = onCall(async (request) => {
     if (!snap.exists) throw new HttpsError("not-found", "Test sessiyasi topilmadi.");
     const d = snap.data();
     if (d.uid !== request.auth.uid) throw new HttpsError("permission-denied", "Test sessiyasi sizga tegishli emas.");
-    if (d.completed || Date.now() > Number(d.expiresAt || 0)) throw new HttpsError("failed-precondition", "Test sessiyasi tugagan. Testni qayta boshlang.");
+    // Idempotent yakunlash: client tarmoq kechikishi yoki takroriy chaqiruv
+    // sabab finish so'rovini qayta yuborsa, oldingi natijani qaytaramiz.
+    // Aks holda birinchi so'rov muvaffaqiyatli tugab, ikkinchisi xato qaytarishi
+    // frontendda mavzuni yakunlash oqimini to'xtatib qo'yishi mumkin.
+    if (d.completed === true) {
+      result = {
+        passed: d.passed === true,
+        wrongIndices: Array.isArray(d.wrongIndices) ? d.wrongIndices : [],
+        total: Array.isArray(d.indices) ? d.indices.length : 0
+      };
+      return;
+    }
+    if (Date.now() > Number(d.expiresAt || 0)) {
+      throw new HttpsError("failed-precondition", "Test sessiyasi muddati tugagan. Testni qayta boshlang.");
+    }
     if (!Array.isArray(d.indices) || !Number.isInteger(d.position) || d.position !== d.indices.length) {
       throw new HttpsError("failed-precondition", "Barcha savollarga javob berilmagan.");
     }
     const passed = Array.isArray(d.wrongIndices) && d.wrongIndices.length === 0;
     tx.update(ref, { completed: true, passed, finishedAt: FieldValue.serverTimestamp() });
-    result = { passed, wrongIndices: d.wrongIndices, total: d.indices.length };
+    result = { passed, wrongIndices: Array.isArray(d.wrongIndices) ? d.wrongIndices : [], total: d.indices.length };
   });
   return result;
+});
+
+exports.cleanupYonsei3DictationBatch = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError("unauthenticated", "Avval hisobingizga kiring.");
+  const uid = request.auth.uid;
+  const topicNumber = Number(request.data?.topicNumber);
+  const batchId = String(request.data?.batchId || "");
+  if (!Number.isInteger(topicNumber) || topicNumber < 1 || topicNumber > 30
+    || !TOPIC_TITLES[String(topicNumber)] || !isValidBatchId(batchId)) {
+    throw new HttpsError("invalid-argument", "Diktant paketi ma'lumotlari noto'g'ri.");
+  }
+  const prefix = `dictations/${uid}/yonsei3-lesson-${topicNumber}-${batchId}/`;
+  const bucket = getStorage().bucket();
+  const [files] = await bucket.getFiles({ prefix, maxResults: 30 });
+  let deleted = 0;
+  for (const file of files) {
+    try {
+      const [meta] = await file.getMetadata();
+      const custom = meta.metadata || {};
+      if (custom.ownerUid !== uid || custom.course !== "yonsei3"
+        || custom.topic !== String(topicNumber) || custom.batchId !== batchId) continue;
+      await file.delete({ ignoreNotFound: true });
+      deleted++;
+    } catch (error) {
+      console.warn("Yonsei 3 batch cleanup skipped an object", file.name, error);
+    }
+  }
+  return { ok: true, deleted };
 });
 
 exports.submitYonsei3Dictation = onCall(async (request) => {
   if (!request.auth) throw new HttpsError("unauthenticated", "Avval hisobingizga kiring.");
   const uid = request.auth.uid;
   const topicNumber = Number(request.data?.topicNumber);
-  const storagePath = request.data?.storagePath;
+  const batchId = String(request.data?.batchId || "");
+  const legacyStoragePath = request.data?.storagePath;
   const writtenTestSessionId = String(request.data?.writtenTestSessionId || "");
 
   if (!Number.isInteger(topicNumber) || topicNumber < 1 || topicNumber > 30 || !TOPIC_TITLES[String(topicNumber)]) {
     throw new HttpsError("invalid-argument", "Mavzu raqami noto'g'ri.");
   }
-  // UID ni regex ichiga joylashtirmaymiz: Firebase UID qiymati regex metabelgilariga
-  // o'xshash belgilarni o'z ichiga olsa ham, faqat aniq papka prefiksi qabul qilinadi.
-  if (!isValidStoredDictationPath(storagePath, uid, topicNumber)) {
-    throw new HttpsError("permission-denied", "Diktant fayli yo'li yoki nomi noto'g'ri.");
-  }
 
   const bucket = getStorage().bucket();
-  const file = bucket.file(storagePath);
-  let metadata;
-  try { [metadata] = await file.getMetadata(); }
-  catch (_) { throw new HttpsError("not-found", "Diktant rasmi Storage'da topilmadi."); }
+  let uploadedFiles = [];
+  if (isValidBatchId(batchId)) {
+    const prefix = `dictations/${uid}/yonsei3-lesson-${topicNumber}-${batchId}/`;
+    const [files] = await bucket.getFiles({ prefix, maxResults: 30 });
+    uploadedFiles = files;
+    if (!uploadedFiles.length) throw new HttpsError("not-found", "Yuklangan diktant rasmlari topilmadi.");
+  } else if (isValidStoredDictationPath(legacyStoragePath, uid, topicNumber)) {
+    uploadedFiles = [bucket.file(legacyStoragePath)];
+  } else {
+    throw new HttpsError("permission-denied", "Diktant paketi yoki fayl yo'li noto'g'ri.");
+  }
+  if (uploadedFiles.length > 20) throw new HttpsError("resource-exhausted", "Bir topshiriqda 20 tadan ortiq rasm yuborib bo'lmaydi.");
 
-  const size = Number(metadata.size || 0);
-  const contentType = metadata.contentType || "";
-  const custom = metadata.metadata || {};
-  if (!size || size > MAX_BYTES || !ALLOWED_TYPES.has(contentType)) {
-    await file.delete({ ignoreNotFound: true }).catch(() => {});
-    throw new HttpsError("failed-precondition", "Rasm hajmi yoki formati talabga mos emas.");
+  const validated = [];
+  let totalSize = 0;
+  for (const file of uploadedFiles) {
+    const storagePath = file.name;
+    if (!isValidStoredDictationPath(storagePath, uid, topicNumber)) {
+      throw new HttpsError("permission-denied", "Diktant fayli yo'li yoki nomi noto'g'ri.");
+    }
+    let metadata;
+    try { [metadata] = await file.getMetadata(); }
+    catch (_) { throw new HttpsError("not-found", "Diktant rasmi Storage'da topilmadi."); }
+    const size = Number(metadata.size || 0);
+    const contentType = metadata.contentType || "";
+    const custom = metadata.metadata || {};
+    if (!size || size > MAX_BYTES || !ALLOWED_TYPES.has(contentType)) {
+      throw new HttpsError("failed-precondition", "Rasmlardan birining hajmi yoki formati talabga mos emas.");
+    }
+    if (custom.ownerUid !== uid || custom.course !== "yonsei3" || custom.topic !== String(topicNumber)
+      || (isValidBatchId(batchId) && custom.batchId !== batchId)) {
+      throw new HttpsError("permission-denied", "Rasm metama'lumotlari mos kelmadi.");
+    }
+    const [bytes] = await file.download();
+    if (bytes.length !== size || !imageSignatureIsValid(bytes, contentType)) {
+      throw new HttpsError("invalid-argument", "Yuklangan fayllardan biri haqiqiy JPG, PNG yoki WEBP rasm emas.");
+    }
+    totalSize += size;
+    validated.push({ storagePath, contentType, size });
   }
-  if (custom.ownerUid !== uid || custom.course !== "yonsei3" || custom.topic !== String(topicNumber)) {
-    await file.delete({ ignoreNotFound: true }).catch(() => {});
-    throw new HttpsError("permission-denied", "Rasm metama'lumotlari mos kelmadi.");
-  }
-
-  const [bytes] = await file.download();
-  if (bytes.length !== size || !imageSignatureIsValid(bytes, contentType)) {
-    await file.delete({ ignoreNotFound: true }).catch(() => {});
-    throw new HttpsError("invalid-argument", "Fayl haqiqiy JPG, PNG yoki WEBP rasm emas.");
-  }
+  validated.sort((a, b) => a.storagePath.localeCompare(b.storagePath));
+  const storagePaths = validated.map((item) => item.storagePath);
+  const firstImage = validated[0];
 
   const db = getFirestore();
   const submissionId = `${uid}_yonsei3_${topicNumber}`;
@@ -229,8 +294,6 @@ exports.submitYonsei3Dictation = onCall(async (request) => {
       if (existing.exists && existing.data().status !== "rejected") {
         throw new HttpsError("already-exists", "Bu mavzu uchun topshiriq allaqachon yuborilgan yoki tasdiqlangan.");
       }
-      // First submission requires a one-time, server-passed written-test session.
-      // Rejected dictation resubmissions intentionally skip memorization/test.
       let writtenTestRef = null;
       if (!existing.exists || existing.data().status !== "rejected") {
         if (!/^[a-f0-9-]{36}$/i.test(writtenTestSessionId)) {
@@ -244,96 +307,52 @@ exports.submitYonsei3Dictation = onCall(async (request) => {
           throw new HttpsError("failed-precondition", "Yozma test natijasi server tomonidan tasdiqlanmagan yoki avval ishlatilgan.");
         }
       }
-      // Server-side ketma-ketlik himoyasi: faqat bevosita oldingi mavzuni emas,
-      // undan avvalgi BARCHA mavzularni tekshiramiz. Aks holda client chetlab
-      // o'tilib, oldingi mavzu rejected bo'lsa ham keyingi mavzu yuborilishi mumkin.
       for (let previousNumber = 1; previousNumber < topicNumber; previousNumber++) {
-        const previousRef = db.collection("yonsei3DictationSubmissions")
-          .doc(`${uid}_yonsei3_${previousNumber}`);
+        const previousRef = db.collection("yonsei3DictationSubmissions").doc(`${uid}_yonsei3_${previousNumber}`);
         const previous = await tx.get(previousRef);
         const previousData = previous.exists ? previous.data() : null;
-        if (!previousData
-          || previousData.uid !== uid
-          || previousData.course !== "yonsei3"
+        if (!previousData || previousData.uid !== uid || previousData.course !== "yonsei3"
           || !["submitted", "approved"].includes(previousData.status)) {
-          throw new HttpsError(
-            "failed-precondition",
-            `${previousNumber}-mavzu diktanti hali muvaffaqiyatli topshirilmagan yoki rad etilgan. Avval shu mavzuni qayta topshiring.`
-          );
+          throw new HttpsError("failed-precondition", `${previousNumber}-mavzu diktanti hali muvaffaqiyatli topshirilmagan yoki rad etilgan. Avval shu mavzuni qayta topshiring.`);
         }
       }
-      if (writtenTestRef) {
-        tx.update(writtenTestRef, { consumed: true, consumedAt: FieldValue.serverTimestamp() });
-      }
+      if (writtenTestRef) tx.update(writtenTestRef, { consumed: true, consumedAt: FieldValue.serverTimestamp() });
       const old = existing.exists ? existing.data() : null;
       const attempts = Array.isArray(old?.attempts) ? old.attempts.slice(-9) : [];
       if (old) {
         const oldVersion = Number(old.submissionVersion || 1);
-        // Keep every future historical attempt in its own document. This avoids
-        // truncating the audit trail or growing the parent document indefinitely.
-        tx.set(ref.collection("attempts").doc(String(oldVersion)), {
-          storagePath: old.storagePath,
-          contentType: old.contentType || "",
-          size: Number(old.size || 0),
-          submittedAt: old.submittedAt || null,
-          status: old.status || "unknown",
-          reviewedAt: old.reviewedAt || null,
-          reviewedBy: old.reviewedBy || null,
-          teacherComment: old.teacherComment || "",
-          submissionVersion: oldVersion
-        });
-        // Retain a small legacy copy for compatibility with older clients/data.
-        attempts.push({ storagePath: old.storagePath, contentType: old.contentType, size: old.size, submittedAt: old.submittedAt || null, status: old.status, reviewedAt: old.reviewedAt || null, reviewedBy: old.reviewedBy || null, teacherComment: old.teacherComment || "", submissionVersion: oldVersion });
+        const oldPaths = Array.isArray(old.storagePaths) && old.storagePaths.length ? old.storagePaths : (old.storagePath ? [old.storagePath] : []);
+        const history = {
+          storagePath: old.storagePath || oldPaths[0] || "", storagePaths: oldPaths,
+          contentType: old.contentType || "", size: Number(old.size || 0),
+          submittedAt: old.submittedAt || null, status: old.status || "unknown",
+          reviewedAt: old.reviewedAt || null, reviewedBy: old.reviewedBy || null,
+          teacherComment: old.teacherComment || "", submissionVersion: oldVersion
+        };
+        tx.set(ref.collection("attempts").doc(String(oldVersion)), history);
+        attempts.push(history);
       }
       const submissionVersion = Number(old?.submissionVersion || 0) + 1;
       tx.set(ref, {
-        uid,
-        topicNumber,
-        topicTitle: TOPIC_TITLES[String(topicNumber)],
-        course: "yonsei3",
-        storagePath,
-        contentType,
-        size,
-        status: "submitted",
-        submissionVersion,
-        submittedAt: FieldValue.serverTimestamp(),
-        verifiedAt: FieldValue.serverTimestamp(),
-        attempts,
-        reviewedAt: FieldValue.delete(),
-        reviewedBy: FieldValue.delete(),
-        teacherComment: FieldValue.delete()
+        uid, topicNumber, topicTitle: TOPIC_TITLES[String(topicNumber)], course: "yonsei3",
+        storagePath: firstImage.storagePath, storagePaths,
+        contentType: firstImage.contentType, size: totalSize, imageCount: storagePaths.length,
+        status: "submitted", submissionVersion,
+        submittedAt: FieldValue.serverTimestamp(), verifiedAt: FieldValue.serverTimestamp(), attempts,
+        reviewedAt: FieldValue.delete(), reviewedBy: FieldValue.delete(), teacherComment: FieldValue.delete()
       }, { merge: true });
     });
   } catch (error) {
-    // Idempotency/race protection: a repeated callable request may reference the
-    // exact same client-generated Storage path as a successful concurrent request.
-    // Never delete an object that is already referenced by the canonical submission
-    // or by its retained attempt history.
-    let isReferenced = false;
-    try {
-      const latest = await ref.get();
-      if (latest.exists) {
-        const data = latest.data() || {};
-        isReferenced = data.storagePath === storagePath
-          || (Array.isArray(data.attempts) && data.attempts.some((attempt) => attempt?.storagePath === storagePath));
-        if (!isReferenced) {
-          const historical = await ref.collection("attempts").where("storagePath", "==", storagePath).limit(1).get();
-          isReferenced = !historical.empty;
-        }
-      }
-    } catch (lookupError) {
-      // Fail closed for cleanup: if reference state cannot be checked, keep the file.
-      console.error("Could not verify dictation object reference after transaction failure", lookupError);
-      isReferenced = true;
-    }
-    if (!isReferenced) await file.delete({ ignoreNotFound: true }).catch(() => {});
+    // Do not remove files on transaction failure: the same batch may have been
+    // committed by a concurrent retry. The explicit cleanup callable is used only
+    // for failed uploads before this submission call.
     if (error instanceof HttpsError) throw error;
     console.error("submitYonsei3Dictation transaction failed", error);
     throw new HttpsError("internal", "Topshiriqni saqlashda server xatoligi yuz berdi.");
   }
-
   const latest = await ref.get();
-  return { ok: true, submissionId, topicNumber, topicTitle: TOPIC_TITLES[String(topicNumber)], status: "submitted", submissionVersion: Number(latest.data()?.submissionVersion || 1) };
+  return { ok: true, submissionId, topicNumber, topicTitle: TOPIC_TITLES[String(topicNumber)],
+    status: "submitted", submissionVersion: Number(latest.data()?.submissionVersion || 1), imageCount: storagePaths.length };
 });
 
 // A successful student submission completes/unlocks the topic immediately.
@@ -391,10 +410,11 @@ exports.listYonsei3Submissions = onCall(async (request) => {
       reviewedAt: a.reviewedAt?.toMillis?.() || null,
       reviewedBy: a.reviewedBy || null,
       teacherComment: a.teacherComment || "",
+      imageCount: Array.isArray(a.storagePaths) ? a.storagePaths.length : (a.storagePath ? 1 : 0),
       submissionVersion: Number(a.submissionVersion || 0)
     }));
     return { id: doc.id, uid: d.uid, topicNumber: d.topicNumber, topicTitle: d.topicTitle,
-      contentType: d.contentType, size: d.size,
+      contentType: d.contentType, size: d.size, imageCount: Number(d.imageCount || (Array.isArray(d.storagePaths) ? d.storagePaths.length : 1)),
       status: d.status, submissionVersion: Number(d.submissionVersion || 1),
       submittedAt: d.submittedAt?.toMillis?.() || null,
       teacherComment: d.teacherComment || "", attempts };
@@ -409,38 +429,41 @@ exports.getYonsei3DictationImage = onCall(async (request) => {
   await requireActiveTeacher(request.auth.uid);
   const submissionId = String(request.data?.submissionId || "");
   const version = Number(request.data?.submissionVersion);
-  if (!submissionId || submissionId.length > 180 || submissionId.includes("/") || !Number.isInteger(version) || version < 1) {
-    throw new HttpsError("invalid-argument", "Topshiriq yoki urinish raqami noto'g'ri.");
+  const offsetRaw = String(request.data?.pageToken || "0");
+  const offset = /^\d+$/.test(offsetRaw) ? Number(offsetRaw) : NaN;
+  if (!submissionId || submissionId.length > 180 || submissionId.includes("/")
+    || !Number.isInteger(version) || version < 1 || !Number.isSafeInteger(offset) || offset < 0) {
+    throw new HttpsError("invalid-argument", "Topshiriq, urinish yoki sahifa belgisi noto'g'ri.");
   }
   const snap = await getFirestore().collection("yonsei3DictationSubmissions").doc(submissionId).get();
-  if (!snap.exists || snap.data().course !== "yonsei3") {
-    throw new HttpsError("not-found", "Diktant topshirig'i topilmadi.");
-  }
+  if (!snap.exists || snap.data().course !== "yonsei3") throw new HttpsError("not-found", "Diktant topshirig'i topilmadi.");
   const data = snap.data();
-  if (!hasCanonicalSubmissionIdentity(submissionId, data)) {
-    throw new HttpsError("failed-precondition", "Topshiriq identifikatori noto'g'ri.");
-  }
-  let storagePath = null;
-  if (Number(data.submissionVersion || 1) === version) {
-    storagePath = data.storagePath;
-  } else {
+  if (!hasCanonicalSubmissionIdentity(submissionId, data)) throw new HttpsError("failed-precondition", "Topshiriq identifikatori noto'g'ri.");
+  let attemptData = data;
+  if (Number(data.submissionVersion || 1) !== version) {
     const attemptSnap = await snap.ref.collection("attempts").doc(String(version)).get();
-    if (attemptSnap.exists) storagePath = attemptSnap.data().storagePath || null;
-    if (!storagePath) {
-      const legacyAttempt = (Array.isArray(data.attempts) ? data.attempts : [])
-        .find((item) => Number(item.submissionVersion || 0) === version);
-      storagePath = legacyAttempt?.storagePath || null;
+    if (attemptSnap.exists) attemptData = attemptSnap.data();
+    else {
+      const legacy = (Array.isArray(data.attempts) ? data.attempts : []).find((item) => Number(item.submissionVersion || 0) === version);
+      if (!legacy) throw new HttpsError("not-found", "Ushbu urinish topilmadi.");
+      attemptData = legacy;
     }
   }
-  if (!isValidStoredDictationPath(storagePath, data.uid, data.topicNumber)) {
-    throw new HttpsError("not-found", "Ushbu urinish uchun rasm topilmadi.");
+  const paths = Array.isArray(attemptData.storagePaths) && attemptData.storagePaths.length
+    ? attemptData.storagePaths : (attemptData.storagePath ? [attemptData.storagePath] : []);
+  if (!paths.length || paths.some((path) => !isValidStoredDictationPath(path, data.uid, data.topicNumber))) {
+    throw new HttpsError("not-found", "Ushbu urinish uchun rasmlar topilmadi.");
   }
-  const [url] = await getStorage().bucket().file(storagePath).getSignedUrl({
-    version: "v4",
-    action: "read",
-    expires: Date.now() + 5 * 60 * 1000
-  });
-  return { url, expiresInSeconds: 300 };
+  const pageSize = 5;
+  const page = paths.slice(offset, offset + pageSize);
+  const images = await Promise.all(page.map(async (storagePath) => {
+    const [url] = await getStorage().bucket().file(storagePath).getSignedUrl({
+      version: "v4", action: "read", expires: Date.now() + 5 * 60 * 1000
+    });
+    return { url };
+  }));
+  const nextOffset = offset + page.length;
+  return { images, nextPageToken: nextOffset < paths.length ? String(nextOffset) : null, expiresInSeconds: 300 };
 });
 
 exports.reviewYonsei3Submission = onCall(async (request) => {

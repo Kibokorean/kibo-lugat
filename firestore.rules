@@ -47,7 +47,21 @@ service cloud.firestore {
 
       // Foydalanuvchi o‘z profilini boshqarishi mumkin.
       // Teacher/admin huquqlari bu hujjatdan aniqlanmasligi kerak.
-      allow create, update: if signedIn()
+      // Yangi hujjat yaratilganda resource.data mavjud bo'lmaydi.
+      // Shu sababli create va update alohida tekshiriladi.
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasNone([
+          'role',
+          'isTeacher',
+          'admin',
+          'isAdmin',
+          'teacher',
+          'permissions'
+        ]);
+
+      // Mavjud profil yangilanganda huquq maydonlarini o'zgartirish taqiqlanadi.
+      allow update: if signedIn()
         && request.auth.uid == userId
         && request.resource.data.diff(resource.data).affectedKeys()
           .hasNone([
