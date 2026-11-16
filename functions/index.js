@@ -395,6 +395,15 @@ exports.listYonsei3Submissions = onCall(async (request) => {
   const snap = await getFirestore().collection("yonsei3DictationSubmissions")
     .where("course", "==", "yonsei3").where("status", "==", status)
     .orderBy("submittedAt", "desc").limit(50).get();
+  // Read only the profiles belonging to the latest 50 submissions; never scan the full users collection.
+  const profileRefs = snap.docs
+    .map((doc) => String(doc.data().uid || ""))
+    .filter(Boolean)
+    .map((uid) => getFirestore().collection("users").doc(uid));
+  const profileSnaps = profileRefs.length ? await getFirestore().getAll(...profileRefs) : [];
+  const profileNames = new Map(profileSnaps.map((profile) => [profile.id,
+    String(profile.exists ? (profile.data().profileName || "") : "").trim()]));
+
   const items = await Promise.all(snap.docs.map(async (doc) => {
     const d = doc.data();
     const legacyAttempts = Array.isArray(d.attempts) ? d.attempts : [];
@@ -413,7 +422,8 @@ exports.listYonsei3Submissions = onCall(async (request) => {
       imageCount: Array.isArray(a.storagePaths) ? a.storagePaths.length : (a.storagePath ? 1 : 0),
       submissionVersion: Number(a.submissionVersion || 0)
     }));
-    return { id: doc.id, uid: d.uid, topicNumber: d.topicNumber, topicTitle: d.topicTitle,
+    return { id: doc.id, uid: d.uid, studentName: profileNames.get(String(d.uid || "")) || "",
+      topicNumber: d.topicNumber, topicTitle: d.topicTitle,
       contentType: d.contentType, size: d.size, imageCount: Number(d.imageCount || (Array.isArray(d.storagePaths) ? d.storagePaths.length : 1)),
       status: d.status, submissionVersion: Number(d.submissionVersion || 1),
       submittedAt: d.submittedAt?.toMillis?.() || null,
