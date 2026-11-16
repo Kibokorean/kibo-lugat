@@ -51,7 +51,7 @@ service cloud.firestore {
       // Shu sababli create va update alohida tekshiriladi.
       allow create: if signedIn()
         && request.auth.uid == userId
-        && request.resource.data.keys().hasNone([
+        && !request.resource.data.keys().hasAny([
           'role',
           'isTeacher',
           'admin',
@@ -63,8 +63,8 @@ service cloud.firestore {
       // Mavjud profil yangilanganda huquq maydonlarini o'zgartirish taqiqlanadi.
       allow update: if signedIn()
         && request.auth.uid == userId
-        && request.resource.data.diff(resource.data).affectedKeys()
-          .hasNone([
+        && !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny([
             'role',
             'isTeacher',
             'admin',
