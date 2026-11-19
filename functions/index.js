@@ -96,9 +96,31 @@ exports.startYonsei3WrittenTest = onCall(async (request) => {
   }
   const words = YONSEI3_ANSWER_KEY[String(topicNumber)] || [];
   if (!words.length) throw new HttpsError("failed-precondition", "Bu mavzu uchun test kaliti topilmadi.");
+  const resumeSessionId = String(request.data?.resumeSessionId || "");
+  const db = getFirestore();
+  // Reopen an existing in-progress test from its server-authoritative position.
+  // A returning student may renew an expired session without losing answered words.
+  if (resumeSessionId) {
+    if (!/^[a-f0-9-]{36}$/i.test(resumeSessionId)) throw new HttpsError("invalid-argument", "Test sessiyasi noto'g'ri.");
+    const resumeRef = db.collection("yonsei3WrittenTestSessions").doc(resumeSessionId);
+    let resumed;
+    await db.runTransaction(async tx => {
+      const snap = await tx.get(resumeRef);
+      if (!snap.exists) throw new HttpsError("not-found", "Saqlangan test sessiyasi topilmadi. Testni qayta boshlang.");
+      const d = snap.data();
+      if (d.uid !== uid || Number(d.topicNumber) !== topicNumber) throw new HttpsError("permission-denied", "Bu test sessiyasini davom ettirishga ruxsat yo'q.");
+      if (d.completed === true) throw new HttpsError("failed-precondition", "Bu test allaqachon yakunlangan.");
+      if (!Array.isArray(d.indices) || !Number.isInteger(d.position) || d.position < 0 || d.position > d.indices.length) throw new HttpsError("failed-precondition", "Saqlangan test holati noto'g'ri.");
+      const renewedExpiry = Date.now() + 7 * 24 * 60 * 60 * 1000;
+      tx.update(resumeRef, { expiresAt: renewedExpiry, lastResumedAt: FieldValue.serverTimestamp() });
+      resumed = { sessionId: resumeSessionId, topicNumber, total: d.indices.length, position: d.position,
+        wrongIndices: Array.isArray(d.wrongIndices) ? d.wrongIndices : [],
+        prompts: d.indices.map(i => ({ index: i, meaning: words[Number(i)]?.back || "" })) };
+    });
+    return resumed;
+  }
   const previousSessionId = String(request.data?.previousSessionId || "");
   let indices = words.map((_, i) => i);
-  const db = getFirestore();
   if (previousSessionId) {
     if (!/^[a-f0-9-]{36}$/i.test(previousSessionId)) throw new HttpsError("invalid-argument", "Oldingi test sessiyasi noto'g'ri.");
     const previousRef = db.collection("yonsei3WrittenTestSessions").doc(previousSessionId);
@@ -114,7 +136,7 @@ exports.startYonsei3WrittenTest = onCall(async (request) => {
   const sessionId = randomUUID();
   await db.collection("yonsei3WrittenTestSessions").doc(sessionId).create({
     uid, topicNumber, indices, position: 0, wrongIndices: [], completed: false,
-    createdAt: FieldValue.serverTimestamp(), expiresAt: Date.now() + 6 * 60 * 60 * 1000
+    createdAt: FieldValue.serverTimestamp(), expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000
   });
   return { sessionId, topicNumber, total: indices.length,
     prompts: indices.map(i => ({ index: i, meaning: words[i].back })) };
