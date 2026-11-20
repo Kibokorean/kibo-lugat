@@ -3285,7 +3285,7 @@ function selectBook2ASection(j){
  function escapeHTML(value){return String(value).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]})}
  function dayStamp(d){let x=new Date(d);x.setHours(0,0,0,0);return x.getTime()}
  function dueList(){const data=read(), now=dayStamp(Date.now());return Object.values(data).filter(x=>x&&x.due&&dayStamp(x.due)<=now)}
- function update(){const due=dueList();const el=document.getElementById('dueReviewCount');if(el)el.textContent=due.length;renderHomeDueWords(due);}
+ function update(){const due=dueList();const el=document.getElementById('dueReviewCount');if(el)el.textContent=due.length;renderHomeDueWords(due);renderCalendar();}
  function renderHomeDueWords(due){
    const list=document.getElementById('homeDueWordsList'),count=document.getElementById('homeDueWordsCount'),start=document.getElementById('homeStartDueReview');
    if(!list)return;due=due||dueList();if(count)count.textContent=due.length+' ta';if(start)start.disabled=!due.length;
@@ -3332,7 +3332,7 @@ function selectBook2ASection(j){
    }
    if(!due.length){alert('Hozir takrorlash vaqti kelgan so‘z yo‘q. Keyingi takrorlash sanasi kelganda shu yerda chiqadi.');return;}
    reviewMode=true; window.kiboReviewReplayMode=true; activeSection=-1;
-   WORDS=due.map(x=>({ko:x.ko,uz:x.uz,ex:'',sectionTitle:x.sectionTitle,section:x.section}));
+   WORDS=due.map(x=>({ko:x.ko,uz:x.uz,ex:'',reviewSourceId:x.reviewSourceId,sectionTitle:x.sectionTitle,bookName:x.bookName,sourceTitle:x.sourceTitle,book:x.book,collectionName:x.collectionName,section:x.section}));
    state.stage=2; state.index=0; state.current=null; state.shown=false;
    state.memorizeQueue=[]; state.testQueue=WORDS.map((_,i)=>i); state.wrongPool=[]; state.mastered=new Set();
    state.lastMemorizeQueue=[];state.lastWrongQueue=[];
