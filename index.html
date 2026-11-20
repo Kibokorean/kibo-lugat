@@ -3023,11 +3023,28 @@ function updateHomeMasteredCount(){
   // Include progress in the current book section until it is marked complete.
   if(activeSection>=0 && !completedSections.has(activeSection) && state && state.mastered instanceof Set) bookCount+=state.mastered.size;
   bookCount=Math.min(ALL_WORDS.length,bookCount);
+  // Course words are registered in the shared spaced-repetition store only
+  // after the course's own memorization/test flow has accepted them.
+  // Count their source-qualified keys separately so identical words in
+  // different books/topics remain distinct and are not lost to text matching.
+  let courseCount=0;
+  try{
+    const review=JSON.parse(localStorage.getItem('kibo_spaced_review_v1')||'{}');
+    if(review&&typeof review==='object'&&!Array.isArray(review)){
+      courseCount=Object.keys(review).filter(k=>{
+        try{const identity=JSON.parse(k);return Array.isArray(identity)&&typeof identity[0]==='string'&&identity[0].startsWith('course:');}
+        catch(_e){return false;}
+      }).length;
+    }
+  }catch(e){}
   // Personal flashcard words count only after the learner completes the full study/test.
   let personalCount=0;
   try{const saved=JSON.parse(localStorage.getItem('kibo_personal_mastered_words_v1')||'{}');if(saved&&typeof saved==='object'&&!Array.isArray(saved))personalCount=Object.keys(saved).length;}catch(e){}
-  el.textContent=(bookCount+personalCount).toLocaleString('uz-UZ');
+  el.textContent=(bookCount+courseCount+personalCount).toLocaleString('uz-UZ');
 }
+// Course completion registers words asynchronously through the shared review store.
+// Refresh the home total whenever that store changes.
+document.addEventListener('kibo:review-updated',updateHomeMasteredCount);
 function showPickerView(view){
   const home=document.getElementById('kiboHomeSummary');
   const sections=document.getElementById('kiboSectionsView');
