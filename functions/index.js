@@ -382,8 +382,11 @@ exports.submitYonsei3Dictation = onCall(async (request) => {
     throw new HttpsError("internal", "Topshiriqni saqlashda server xatoligi yuz berdi.");
   }
   const latest = await ref.get();
+  const latestData = latest.data() || {};
   return { ok: true, submissionId, topicNumber, topicTitle: TOPIC_TITLES[String(topicNumber)],
-    status: "submitted", submissionVersion: Number(latest.data()?.submissionVersion || 1), imageCount: storagePaths.length };
+    status: latestData.status || "submitted",
+    submissionVersion: Number(latestData.submissionVersion || 1),
+    imageCount: Number(latestData.imageCount || storagePaths.length) };
 });
 
 // A successful student submission completes/unlocks the topic immediately.
