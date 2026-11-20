@@ -314,6 +314,14 @@ exports.submitYonsei3Dictation = onCall(async (request) => {
     await db.runTransaction(async (tx) => {
       const existing = await tx.get(ref);
       if (existing.exists && existing.data().status !== "rejected") {
+        const existingData = existing.data();
+        // Idempotent retry: the same uploaded batch may be submitted again if
+        // Firestore committed successfully but the callable response was lost.
+        // A different batch must never overwrite a pending or approved submission.
+        if (isValidBatchId(batchId) && existingData.batchId === batchId
+          && ["submitted", "approved"].includes(existingData.status)) {
+          return;
+        }
         throw new HttpsError("already-exists", "Bu mavzu uchun topshiriq allaqachon yuborilgan yoki tasdiqlangan.");
       }
       let writtenTestRef = null;
@@ -358,6 +366,7 @@ exports.submitYonsei3Dictation = onCall(async (request) => {
       tx.set(ref, {
         uid, topicNumber, topicTitle: TOPIC_TITLES[String(topicNumber)], course: "yonsei3",
         storagePath: firstImage.storagePath, storagePaths,
+        batchId: isValidBatchId(batchId) ? batchId : "",
         contentType: firstImage.contentType, size: totalSize, imageCount: storagePaths.length,
         status: "submitted", submissionVersion,
         submittedAt: FieldValue.serverTimestamp(), verifiedAt: FieldValue.serverTimestamp(), attempts,
